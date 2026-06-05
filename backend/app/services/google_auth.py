@@ -1,16 +1,25 @@
+import secrets
 import urllib.parse
 import httpx
 from app.core.config import settings
+from app.core.redis import get_redis
+
+# OAuth state token TTL (10 minutes)
+OAUTH_STATE_TTL = 600
 
 
-def get_login_url(telegram_id: int) -> str:
-    """Generate the Google OAuth2 authorization URL."""
+async def get_login_url(telegram_id: int) -> str:
+    """Generate the Google OAuth2 authorization URL with a secure state token."""
+    redis = await get_redis()
+    state_token = secrets.token_urlsafe(32)
+    await redis.set(f"oauth_state:{state_token}", str(telegram_id), ex=OAUTH_STATE_TTL)
+
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
         "redirect_uri": settings.GOOGLE_REDIRECT_URI,
         "response_type": "code",
         "scope": "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email",
-        "state": str(telegram_id),
+        "state": state_token,
         "access_type": "offline",
         "prompt": "consent",
     }

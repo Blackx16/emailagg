@@ -29,6 +29,8 @@ async def show_help_message(message: Message):
         "/start - Register your profile and view the welcome dashboard\n"
         "🔌 /connect - Connect a new Microsoft Outlook or Google Gmail account\n"
         "📧 /accounts - View connected email accounts and sync states\n"
+        "🔌 /disconnect - Remove a connected email account\n"
+        "⚙️ /settings - View your plan, limits, and profile info\n"
         "❓ /help - Display this commands help guide\n\n"
         "🌐 <b>Web Dashboard:</b>\n"
         "To read emails, view sync analytics, configure filters, or manage billing subscriptions, "

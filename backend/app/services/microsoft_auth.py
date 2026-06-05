@@ -1,18 +1,27 @@
+import secrets
 import urllib.parse
 from datetime import datetime, timezone, timedelta
 import httpx
 from app.core.config import settings
+from app.core.redis import get_redis
+
+# OAuth state token TTL (10 minutes)
+OAUTH_STATE_TTL = 600
 
 
-def get_login_url(telegram_id: int) -> str:
-    """Generate the Microsoft OAuth2 authorization URL."""
+async def get_login_url(telegram_id: int) -> str:
+    """Generate the Microsoft OAuth2 authorization URL with a secure state token."""
+    redis = await get_redis()
+    state_token = secrets.token_urlsafe(32)
+    await redis.set(f"oauth_state:{state_token}", str(telegram_id), ex=OAUTH_STATE_TTL)
+
     params = {
         "client_id": settings.MICROSOFT_CLIENT_ID,
         "response_type": "code",
         "redirect_uri": settings.MICROSOFT_REDIRECT_URI,
         "response_mode": "query",
         "scope": "offline_access Mail.Read User.Read",
-        "state": str(telegram_id),
+        "state": state_token,
     }
     encoded = urllib.parse.urlencode(params)
     return f"https://login.microsoftonline.com/{settings.MICROSOFT_TENANT_ID}/oauth2/v2.0/authorize?{encoded}"

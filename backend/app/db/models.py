@@ -34,7 +34,7 @@ class User(Base):
     notifications: Mapped[list["Notification"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     # Plan limits
-    PLAN_LIMITS = {"free": 500, "pro": 500, "agency": 500}
+    PLAN_LIMITS = {"free": 3, "pro": 25, "agency": 100}
 
     @property
     def max_accounts(self) -> int:
@@ -69,6 +69,7 @@ class MailAccount(Base):
     )
     last_sync: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    history_id: Mapped[str | None] = mapped_column(String(64), nullable=True)  # Gmail historyId for incremental sync
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["User"] = relationship(back_populates="mail_accounts")

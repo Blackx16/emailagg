@@ -2,6 +2,8 @@
 .env
 *.pem
 *.key
+.github_token
+*.token
 
 # Python
 __pycache__/

@@ -58,29 +58,29 @@ def verify_telegram_init_data(init_data: str, bot_token: str) -> dict | None:
         
         received_hash = params.pop("hash")
         
-        # Local development bypass checks
-        if settings.APP_ENV == "development" and received_hash == "dummy":
-            logger.info("Bypassing Telegram signature check for local development dev login.")
-            return params
+        # SECURITY: Never allow dummy hash bypass in production
+        if received_hash == "dummy":
+            if settings.APP_ENV == "production":
+                logger.critical("SECURITY: Dummy hash auth attempt blocked in production!")
+                return None
+            if settings.APP_ENV == "development":
+                logger.info("Bypassing Telegram signature check for local development dev login.")
+                return params
         
         # 2. Sort key-value pairs alphabetically and build data_check_string
         sorted_params = sorted(params.items())
         data_check_string = "\n".join(f"{k}={v}" for k, v in sorted_params)
         
-        # 3. Calculate secret key
-        # secret_key = HMAC-SHA256("WebApps", bot_token)
-        secret_key = hmac.new(b"WebApps", bot_token.encode(), hashlib.sha256).digest()
+        # 3. Calculate secret key — per Telegram docs: HMAC_SHA256(bot_token, "WebAppData")
+        secret_key = hmac.new(bot_token.encode(), b"WebAppData", hashlib.sha256).digest()
         
         # 4. Calculate signature
         calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
         
-        logger.info(f"DEBUG: Telegram Auth: data_check_string:\n{data_check_string}")
-        logger.info(f"DEBUG: Telegram Auth: calculated_hash={calculated_hash}, received_hash={received_hash}")
+        logger.debug(f"Telegram Auth: data_check_string:\n{data_check_string}")
+        logger.debug(f"Telegram Auth: calculated_hash={calculated_hash}")
         
         if calculated_hash != received_hash:
-            if settings.APP_ENV == "development":
-                logger.warning("Telegram signature verification failed, but allowing login due to APP_ENV=development bypass.")
-                return params
             logger.warning("Telegram signature verification failed.")
             return None
             

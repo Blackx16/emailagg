@@ -17,110 +17,209 @@ class GmailSyncService:
         self.db = db
 
     async def sync(self):
-        """Synchronize emails from Google Gmail inbox."""
+        """Synchronize emails from Google Gmail inbox.
+
+        Uses Gmail History API for incremental sync when a historyId is stored,
+        falling back to messages.list for the initial sync or when history expires.
+        """
         logger.info(f"Starting Gmail sync for {self.account.email}")
 
         # Get valid access token
         access_token = await get_valid_access_token(self.account, self.db)
 
-        # 1. Fetch latest 50 message summaries from inbox
-        list_url = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
-        params = {"maxResults": 50, "q": "label:INBOX"}
-
-        # Google's after filter accepts Unix timestamps
-        if self.account.last_sync:
-            after_timestamp = int(self.account.last_sync.replace(tzinfo=timezone.utc).timestamp())
-            params["q"] += f" after:{after_timestamp}"
+        # Fetch user's telegram ID (needed for notifications)
+        stmt = select(User.telegram_id).where(User.id == self.account.user_id)
+        user_result = await self.db.execute(stmt)
+        telegram_id = user_result.scalar_one()
 
         async with httpx.AsyncClient() as client:
             headers = {"Authorization": f"Bearer {access_token}"}
-            resp = await client.get(list_url, params=params, headers=headers)
 
-            if resp.status_code != 200:
-                raise ValueError(f"Gmail messages list failed: {resp.text}")
+            if self.account.history_id:
+                # Incremental sync via History API
+                new_count = await self._sync_via_history(client, headers, telegram_id)
+            else:
+                # Initial full sync via messages.list
+                new_count = await self._sync_via_messages_list(client, headers, telegram_id)
 
-            list_data = resp.json()
-            messages = list_data.get("messages", [])
-
-            # Fetch user's telegram ID
-            stmt = select(User.telegram_id).where(User.id == self.account.user_id)
-            user_result = await self.db.execute(stmt)
-            telegram_id = user_result.scalar_one()
-
-            new_emails_count = 0
-            # Sync oldest emails first to maintain chronological notification order
-            for msg_summary in reversed(messages):
-                msg_id = msg_summary["id"]
-
-                # Deduplicate by checking if message_id is already stored for this account
-                stmt_email = select(Email).where(
-                    Email.mail_account_id == self.account.id, Email.message_id == msg_id
-                )
-                email_result = await self.db.execute(stmt_email)
-                existing_email = email_result.scalar_one_or_none()
-
-                if existing_email:
-                    continue
-
-                # Fetch metadata headers for this message (efficient retrieval)
-                detail_url = f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{msg_id}"
-                detail_params = {
-                    "format": "metadata",
-                    "metadataHeaders": ["Subject", "From", "Date"],
-                }
-
-                detail_resp = await client.get(detail_url, params=detail_params, headers=headers)
-                if detail_resp.status_code != 200:
-                    logger.error(
-                        f"Failed to fetch Gmail message details for {msg_id}: {detail_resp.text}"
-                    )
-                    continue
-
-                msg_detail = detail_resp.json()
-                headers_list = msg_detail.get("payload", {}).get("headers", [])
-
-                subject = next((h["value"] for h in headers_list if h["name"].lower() == "subject"), "")
-                from_header = next((h["value"] for h in headers_list if h["name"].lower() == "from"), "")
-                date_header = next((h["value"] for h in headers_list if h["name"].lower() == "date"), "")
-
-                from_name, from_email = self._parse_from_header(from_header)
-                received_at = self._parse_date_header(date_header)
-
-                # Create Email record
-                new_email = Email(
-                    mail_account_id=self.account.id,
-                    message_id=msg_id,
-                    subject=subject,
-                    from_email=from_email,
-                    from_name=from_name,
-                    received_at=received_at,
-                    snippet=msg_detail.get("snippet"),
-                    has_attachment=self._has_attachments(msg_detail),
-                    is_read="UNREAD" not in msg_detail.get("labelIds", []),
-                    notified=False,
-                )
-                self.db.add(new_email)
-                await self.db.flush()  # Populate new_email.id
-
-                # Enqueue Telegram notification task
-                notification_payload = {
-                    "subject": new_email.subject or "(No Subject)",
-                    "from_name": new_email.from_name or "Unknown",
-                    "from_email": new_email.from_email or "Unknown",
-                    "mailbox": self.account.email,
-                    "email_id": str(new_email.id),
-                }
-
-                send_telegram_notification.delay(telegram_id, notification_payload)
-                new_emails_count += 1
-
-            # Update account sync logs
+            # Update account sync status
             self.account.last_sync = datetime.now(timezone.utc)
             self.account.status = "active"
             self.account.error_message = None
             await self.db.commit()
 
-            logger.info(f"Gmail sync finished. Synced {new_emails_count} new emails.")
+            logger.info(f"Gmail sync finished. Synced {new_count} new emails.")
+
+    async def _sync_via_history(
+        self, client: httpx.AsyncClient, headers: dict, telegram_id: int
+    ) -> int:
+        """Incremental sync using Gmail History API — only fetches changes since last historyId."""
+        history_url = "https://gmail.googleapis.com/gmail/v1/users/me/history"
+        params = {
+            "startHistoryId": self.account.history_id,
+            "historyTypes": "messageAdded",
+            "labelId": "INBOX",
+        }
+
+        resp = await client.get(history_url, params=params, headers=headers)
+
+        if resp.status_code == 404:
+            # historyId expired (Gmail only keeps ~30 days). Fall back to full sync.
+            logger.warning(
+                f"Gmail historyId expired for {self.account.email}, falling back to full sync."
+            )
+            self.account.history_id = None
+            return await self._sync_via_messages_list(client, headers, telegram_id)
+
+        if resp.status_code != 200:
+            raise ValueError(f"Gmail history.list failed: {resp.text}")
+
+        history_data = resp.json()
+
+        # Update historyId for next sync
+        new_history_id = history_data.get("historyId")
+        if new_history_id:
+            self.account.history_id = str(new_history_id)
+
+        # Extract new message IDs from history records
+        new_msg_ids = set()
+        for record in history_data.get("history", []):
+            for msg_added in record.get("messagesAdded", []):
+                msg = msg_added.get("message", {})
+                # Only include INBOX messages
+                label_ids = msg.get("labelIds", [])
+                if "INBOX" in label_ids:
+                    new_msg_ids.add(msg["id"])
+
+        if not new_msg_ids:
+            return 0
+
+        # Fetch and store new messages
+        return await self._fetch_and_store_messages(
+            client, headers, telegram_id, list(new_msg_ids)
+        )
+
+    async def _sync_via_messages_list(
+        self, client: httpx.AsyncClient, headers: dict, telegram_id: int
+    ) -> int:
+        """Initial full sync using messages.list — fetches latest inbox messages."""
+        list_url = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+        params = {"maxResults": 50, "q": "label:INBOX"}
+
+        # Only fetch messages after last sync time
+        if self.account.last_sync:
+            after_timestamp = int(
+                self.account.last_sync.replace(tzinfo=timezone.utc).timestamp()
+            )
+            params["q"] += f" after:{after_timestamp}"
+
+        resp = await client.get(list_url, params=params, headers=headers)
+        if resp.status_code != 200:
+            raise ValueError(f"Gmail messages list failed: {resp.text}")
+
+        list_data = resp.json()
+        messages = list_data.get("messages", [])
+
+        # Store the historyId from the profile for future incremental syncs
+        profile_resp = await client.get(
+            "https://gmail.googleapis.com/gmail/v1/users/me/profile", headers=headers
+        )
+        if profile_resp.status_code == 200:
+            profile_data = profile_resp.json()
+            history_id = profile_data.get("historyId")
+            if history_id:
+                self.account.history_id = str(history_id)
+
+        if not messages:
+            return 0
+
+        msg_ids = [m["id"] for m in reversed(messages)]  # oldest first
+        return await self._fetch_and_store_messages(client, headers, telegram_id, msg_ids)
+
+    async def _fetch_and_store_messages(
+        self,
+        client: httpx.AsyncClient,
+        headers: dict,
+        telegram_id: int,
+        msg_ids: list[str],
+    ) -> int:
+        """Fetch message details and store new emails, deduplicating by message_id."""
+        new_emails_count = 0
+
+        for msg_id in msg_ids:
+            # Deduplicate by checking if message_id is already stored for this account
+            stmt_email = select(Email).where(
+                Email.mail_account_id == self.account.id, Email.message_id == msg_id
+            )
+            email_result = await self.db.execute(stmt_email)
+            existing_email = email_result.scalar_one_or_none()
+
+            if existing_email:
+                continue
+
+            # Fetch metadata headers for this message (efficient retrieval)
+            detail_url = (
+                f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{msg_id}"
+            )
+            detail_params = {
+                "format": "metadata",
+                "metadataHeaders": ["Subject", "From", "Date"],
+            }
+
+            detail_resp = await client.get(
+                detail_url, params=detail_params, headers=headers
+            )
+            if detail_resp.status_code != 200:
+                logger.error(
+                    f"Failed to fetch Gmail message details for {msg_id}: {detail_resp.text}"
+                )
+                continue
+
+            msg_detail = detail_resp.json()
+            headers_list = msg_detail.get("payload", {}).get("headers", [])
+
+            subject = next(
+                (h["value"] for h in headers_list if h["name"].lower() == "subject"), ""
+            )
+            from_header = next(
+                (h["value"] for h in headers_list if h["name"].lower() == "from"), ""
+            )
+            date_header = next(
+                (h["value"] for h in headers_list if h["name"].lower() == "date"), ""
+            )
+
+            from_name, from_email = self._parse_from_header(from_header)
+            received_at = self._parse_date_header(date_header)
+
+            # Create Email record
+            new_email = Email(
+                mail_account_id=self.account.id,
+                message_id=msg_id,
+                subject=subject,
+                from_email=from_email,
+                from_name=from_name,
+                received_at=received_at,
+                snippet=msg_detail.get("snippet"),
+                has_attachment=self._has_attachments(msg_detail),
+                is_read="UNREAD" not in msg_detail.get("labelIds", []),
+                notified=False,
+            )
+            self.db.add(new_email)
+            await self.db.flush()  # Populate new_email.id
+
+            # Enqueue Telegram notification task
+            notification_payload = {
+                "subject": new_email.subject or "(No Subject)",
+                "from_name": new_email.from_name or "Unknown",
+                "from_email": new_email.from_email or "Unknown",
+                "mailbox": self.account.email,
+                "email_id": str(new_email.id),
+            }
+
+            send_telegram_notification.delay(telegram_id, notification_payload)
+            new_emails_count += 1
+
+        return new_emails_count
 
     def _parse_from_header(self, from_header: str) -> tuple[str, str]:
         from email.utils import parseaddr

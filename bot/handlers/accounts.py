@@ -21,8 +21,7 @@ async def cmd_accounts(message: Message):
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(
-                f"{BACKEND_INTERNAL_URL}/api/v1/accounts",
-                params={"telegram_id": telegram_id},
+                f"{BACKEND_INTERNAL_URL}/api/v1/accounts/internal/by-telegram/{telegram_id}",
                 timeout=5.0,
             )
 

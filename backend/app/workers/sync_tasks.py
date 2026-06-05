@@ -3,27 +3,23 @@ import asyncio
 from functools import wraps
 from celery import shared_task
 from sqlalchemy import select
+import redis as redis_lib
 
 from app.db.session import AsyncSessionLocal
 from app.db.models import MailAccount
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Redis client for sync task deduplication locks
+_sync_redis = redis_lib.from_url(settings.REDIS_URL)
 
 
 def async_to_sync(func):
     """Decorator to run async functions inside synchronous Celery tasks."""
     @wraps(func)
     def wrapper(*args, **kwargs):
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        if loop.is_running():
-            return asyncio.run_coroutine_threadsafe(func(*args, **kwargs), loop).result()
-        else:
-            return loop.run_until_complete(func(*args, **kwargs))
+        return asyncio.run(func(*args, **kwargs))
     return wrapper
 
 
@@ -50,41 +46,56 @@ async def poll_all_accounts(self):
 async def sync_account(self, account_id: str):
     """
     Synchronizes emails for a single mail account.
+    Uses a Redis lock to prevent concurrent syncs of the same account.
     """
-    logger.info("sync_account called for %s", account_id)
-    async with AsyncSessionLocal() as db:
-        # Load mailbox account
-        stmt = select(MailAccount).where(MailAccount.id == account_id)
-        result = await db.execute(stmt)
-        account = result.scalar_one_or_none()
+    lock_key = f"sync_lock:{account_id}"
+    lock = _sync_redis.lock(lock_key, timeout=300)  # 5-min lock timeout
 
-        if not account or account.status == "disconnected":
-            logger.warning(f"MailAccount {account_id} not found or disconnected. Skipping.")
-            return
+    if not lock.acquire(blocking=False):
+        logger.info(f"Sync already running for {account_id}, skipping duplicate task.")
+        return
 
-        # Mark account status as syncing
-        account.status = "syncing"
-        await db.commit()
+    try:
+        logger.info("sync_account called for %s", account_id)
+        async with AsyncSessionLocal() as db:
+            # Load mailbox account
+            stmt = select(MailAccount).where(MailAccount.id == account_id)
+            result = await db.execute(stmt)
+            account = result.scalar_one_or_none()
 
-        try:
-            if account.provider == "microsoft":
-                from app.services.microsoft_sync import MicrosoftSyncService
-                service = MicrosoftSyncService(account, db)
-                await service.sync()
-            elif account.provider == "google":
-                from app.services.gmail_sync import GmailSyncService
-                service = GmailSyncService(account, db)
-                await service.sync()
-            elif account.provider == "imap":
-                from app.services.imap_sync import IMAPSyncService
-                service = IMAPSyncService(account, db)
-                await service.sync()
-            else:
-                raise ValueError(f"Unknown mail provider: {account.provider}")
-        except Exception as exc:
-            logger.error("sync_account failed for %s: %s", account_id, exc)
-            # Re-fetch database session data to prevent transaction state failures
-            account.status = "error"
-            account.error_message = str(exc)
+            if not account or account.status == "disconnected":
+                logger.warning(f"MailAccount {account_id} not found or disconnected. Skipping.")
+                return
+
+            # Mark account status as syncing
+            account.status = "syncing"
             await db.commit()
-            raise self.retry(exc=exc)
+
+            try:
+                if account.provider == "microsoft":
+                    from app.services.microsoft_sync import MicrosoftSyncService
+                    service = MicrosoftSyncService(account, db)
+                    await service.sync()
+                elif account.provider == "google":
+                    from app.services.gmail_sync import GmailSyncService
+                    service = GmailSyncService(account, db)
+                    await service.sync()
+                elif account.provider == "imap":
+                    from app.services.imap_sync import IMAPSyncService
+                    service = IMAPSyncService(account, db)
+                    await service.sync()
+                else:
+                    raise ValueError(f"Unknown mail provider: {account.provider}")
+            except Exception as exc:
+                logger.error("sync_account failed for %s: %s", account_id, exc)
+                # Rollback any broken transaction state before updating error status
+                await db.rollback()
+                account.status = "error"
+                account.error_message = str(exc)
+                await db.commit()
+                raise self.retry(exc=exc)
+    finally:
+        try:
+            lock.release()
+        except redis_lib.exceptions.LockNotOwnedError:
+            pass  # Lock expired before we could release it

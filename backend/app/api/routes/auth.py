@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
 import uuid
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -8,26 +8,32 @@ from sqlalchemy import select
 from app.db.session import get_db
 from app.db.models import User, MailAccount
 from app.core.encryption import encrypt_token
+from app.core.limiter import limiter
+from app.core.redis import get_redis
 from app.services import microsoft_auth, google_auth
 from app.workers.sync_tasks import sync_account
+from app.workers.notification_tasks import send_telegram_message
 
 router = APIRouter()
 
-
 @router.get("/microsoft/login")
-def microsoft_login(telegram_id: int):
+@limiter.limit("10/minute")
+async def microsoft_login(request: Request, telegram_id: int):
     """Initiate Microsoft Outlook OAuth login."""
-    url = microsoft_auth.get_login_url(telegram_id)
+    url = await microsoft_auth.get_login_url(telegram_id)
     return RedirectResponse(url)
 
 
 @router.get("/microsoft/callback")
 async def microsoft_callback(code: str, state: str, db: AsyncSession = Depends(get_db)):
     """Callback for Microsoft Outlook OAuth authentication."""
-    try:
-        telegram_id = int(state)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid state parameter.")
+    # Validate state token from Redis (CSRF protection)
+    redis = await get_redis()
+    telegram_id_str = await redis.get(f"oauth_state:{state}")
+    if not telegram_id_str:
+        raise HTTPException(status_code=400, detail="Invalid or expired OAuth state token.")
+    await redis.delete(f"oauth_state:{state}")  # One-time use
+    telegram_id = int(telegram_id_str)
 
     try:
         token_data = await microsoft_auth.exchange_code(code)
@@ -46,19 +52,23 @@ async def microsoft_callback(code: str, state: str, db: AsyncSession = Depends(g
 
 
 @router.get("/google/login")
-def google_login(telegram_id: int):
+@limiter.limit("10/minute")
+async def google_login(request: Request, telegram_id: int):
     """Initiate Google Gmail OAuth login."""
-    url = google_auth.get_login_url(telegram_id)
+    url = await google_auth.get_login_url(telegram_id)
     return RedirectResponse(url)
 
 
 @router.get("/google/callback")
 async def google_callback(code: str, state: str, db: AsyncSession = Depends(get_db)):
     """Callback for Google Gmail OAuth authentication."""
-    try:
-        telegram_id = int(state)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid state parameter.")
+    # Validate state token from Redis (CSRF protection)
+    redis = await get_redis()
+    telegram_id_str = await redis.get(f"oauth_state:{state}")
+    if not telegram_id_str:
+        raise HTTPException(status_code=400, detail="Invalid or expired OAuth state token.")
+    await redis.delete(f"oauth_state:{state}")  # One-time use
+    telegram_id = int(telegram_id_str)
 
     try:
         token_data = await google_auth.exchange_code(code)
@@ -89,7 +99,9 @@ from app.core.security import get_current_user
 
 
 @router.post("/imap/connect")
+@limiter.limit("10/minute")
 async def connect_imap(
+    request: Request,
     payload: IMAPConnectSchema,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -241,6 +253,16 @@ async def register_oauth_account(
 
     # Trigger async initial sync
     sync_account.delay(str(account_id))
+
+    # Send confirmation message to user via Telegram bot
+    try:
+        await send_telegram_message(
+            telegram_id,
+            f"✅ <b>{provider.capitalize()}</b> account (<code>{email}</code>) connected successfully!\n\n"
+            f"📬 Syncing your inbox now — you'll get notifications for new emails."
+        )
+    except Exception:
+        pass  # Don't fail the OAuth flow if notification fails
 
     return HTMLResponse(
         content=f"""
