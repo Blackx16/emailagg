@@ -71,8 +71,8 @@ def verify_telegram_init_data(init_data: str, bot_token: str) -> dict | None:
         sorted_params = sorted(params.items())
         data_check_string = "\n".join(f"{k}={v}" for k, v in sorted_params)
         
-        # 3. Calculate secret key — per Telegram docs: HMAC_SHA256(bot_token, "WebAppData")
-        secret_key = hmac.new(bot_token.encode(), b"WebAppData", hashlib.sha256).digest()
+        # 3. Calculate secret key — per Telegram docs: HMAC_SHA256(key="WebAppData", data=bot_token)
+        secret_key = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
         
         # 4. Calculate signature
         calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
