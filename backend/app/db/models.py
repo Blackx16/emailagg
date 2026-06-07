@@ -34,7 +34,7 @@ class User(Base):
     notifications: Mapped[list["Notification"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     # Plan limits
-    PLAN_LIMITS = {"free": 3, "pro": 25, "agency": 100}
+    PLAN_LIMITS = {"free": 500, "pro": 25, "agency": 100}
 
     @property
     def max_accounts(self) -> int:
