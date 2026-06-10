@@ -33,6 +33,9 @@ interface Account {
   status: "active" | "syncing" | "error" | "disconnected";
   last_sync: string | null;
   error_message: string | null;
+  notify_telegram: boolean;
+  deliver_to_dashboard: boolean;
+  forward_enabled: boolean;
 }
 
 interface EmailItem {
@@ -203,6 +206,41 @@ export default function DashboardPage() {
       fetchData();
     } catch (err: any) {
       alert(`Failed to disconnect: ${err.message}`);
+    }
+  };
+
+  // Toggle account preferences
+  const handleTogglePreference = async (
+    accountId: string,
+    key: "notify_telegram" | "deliver_to_dashboard" | "forward_enabled",
+    value: boolean
+  ) => {
+    // Optimistic update
+    setAccounts(prev => prev.map(a => a.id === accountId ? { ...a, [key]: value } : a));
+
+    try {
+      const account = accounts.find(a => a.id === accountId);
+      if (!account) return;
+
+      const body = {
+        notify_telegram: key === "notify_telegram" ? value : account.notify_telegram,
+        deliver_to_dashboard: key === "deliver_to_dashboard" ? value : account.deliver_to_dashboard,
+        forward_enabled: key === "forward_enabled" ? value : account.forward_enabled,
+      };
+
+      await apiFetch(`/api/v1/accounts/${accountId}/preferences`, {
+        method: "PUT",
+        token,
+        body,
+      });
+    } catch (err: any) {
+      console.error("Failed to update preferences:", err);
+      // Rollback on error
+      const originalAccount = accounts.find(a => a.id === accountId);
+      if (originalAccount) {
+        setAccounts(prev => prev.map(a => a.id === accountId ? { ...a, [key]: originalAccount[key] } : a));
+      }
+      alert(err.message || "Failed to update preferences.");
     }
   };
 
@@ -783,7 +821,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {accounts.filter(a => a.status !== "disconnected").map((acc) => {
                     return (
-                      <div key={acc.id} className="p-4 rounded-2xl glass-card text-left border border-slate-900 flex flex-col justify-between h-36">
+                      <div key={acc.id} className="p-4 rounded-2xl glass-card text-left border border-slate-900 flex flex-col justify-between min-h-[175px]">
                         <div className="flex items-start justify-between">
                           <div>
                             <span className={`text-[8px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded ${
@@ -811,7 +849,38 @@ export default function DashboardPage() {
                           </span>
                         </div>
 
-                        <div className="flex items-end justify-between border-t border-slate-900/80 pt-3 mt-3">
+                        {/* Preferences Toggles */}
+                        <div className="mt-3.5 pt-2 border-t border-slate-900/40 grid grid-cols-3 gap-1.5 text-[9px] font-semibold text-slate-400">
+                          <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Show incoming emails on dashboard">
+                            <input
+                              type="checkbox"
+                              checked={acc.deliver_to_dashboard}
+                              onChange={(e) => handleTogglePreference(acc.id, "deliver_to_dashboard", e.target.checked)}
+                              className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                            />
+                            <span>📬 Dash</span>
+                          </label>
+                          <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Send alerts to your Telegram bot">
+                            <input
+                              type="checkbox"
+                              checked={acc.notify_telegram}
+                              onChange={(e) => handleTogglePreference(acc.id, "notify_telegram", e.target.checked)}
+                              className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                            />
+                            <span>🔔 Alerts</span>
+                          </label>
+                          <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Enable custom email forwarding rules">
+                            <input
+                              type="checkbox"
+                              checked={acc.forward_enabled}
+                              onChange={(e) => handleTogglePreference(acc.id, "forward_enabled", e.target.checked)}
+                              className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                            />
+                            <span>📤 Forward</span>
+                          </label>
+                        </div>
+
+                        <div className="flex items-end justify-between border-t border-slate-900/80 pt-3 mt-2.5">
                           <span className="text-[9px] text-slate-500">
                             Last Sync: {acc.last_sync ? new Date(acc.last_sync).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Never"}
                           </span>

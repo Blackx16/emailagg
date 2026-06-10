@@ -1,12 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+import uuid
 
 from app.db.session import get_db
 from app.db.models import User, MailAccount
 from app.core.security import get_current_user
+from pydantic import BaseModel
 
 router = APIRouter()
+
+
+class AccountPreferencesSchema(BaseModel):
+    notify_telegram: bool
+    deliver_to_dashboard: bool
+    forward_enabled: bool
 
 
 @router.get("")
@@ -28,6 +36,9 @@ async def get_user_accounts(
             "status": acc.status,
             "last_sync": acc.last_sync.isoformat() if acc.last_sync else None,
             "error_message": acc.error_message,
+            "notify_telegram": acc.notify_telegram,
+            "deliver_to_dashboard": acc.deliver_to_dashboard,
+            "forward_enabled": acc.forward_enabled,
         }
         for acc in accounts
     ]
@@ -59,9 +70,46 @@ async def get_accounts_by_telegram_id(
             "status": acc.status,
             "last_sync": acc.last_sync.isoformat() if acc.last_sync else None,
             "error_message": acc.error_message,
+            "notify_telegram": acc.notify_telegram,
+            "deliver_to_dashboard": acc.deliver_to_dashboard,
+            "forward_enabled": acc.forward_enabled,
         }
         for acc in accounts
     ]
+
+
+@router.put("/{account_id}/preferences")
+async def update_account_preferences(
+    account_id: uuid.UUID,
+    prefs: AccountPreferencesSchema,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update user notification and delivery preferences for a connected mail account."""
+    # Find account and verify ownership
+    stmt = select(MailAccount).where(
+        MailAccount.id == account_id,
+        MailAccount.user_id == current_user.id
+    )
+    res = await db.execute(stmt)
+    account = res.scalar_one_or_none()
+
+    if not account:
+        raise HTTPException(status_code=404, detail="Mail account not found or access denied.")
+
+    account.notify_telegram = prefs.notify_telegram
+    account.deliver_to_dashboard = prefs.deliver_to_dashboard
+    account.forward_enabled = prefs.forward_enabled
+    await db.commit()
+
+    return {
+        "status": "success",
+        "preferences": {
+            "notify_telegram": account.notify_telegram,
+            "deliver_to_dashboard": account.deliver_to_dashboard,
+            "forward_enabled": account.forward_enabled,
+        }
+    }
 
 
 @router.post("/{account_id}/disconnect")
@@ -105,4 +153,3 @@ async def disconnect_account_internal(
     await db.commit()
 
     return {"status": "success", "message": "Account disconnected successfully.", "email": email}
-

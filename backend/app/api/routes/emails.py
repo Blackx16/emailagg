@@ -28,7 +28,10 @@ async def get_emails(
     Optionally filter by a specific mail_account_id, provider, read status, and search query.
     """
     # 1. Resolve accounts owned by the user (optionally filtered by provider)
-    stmt_accounts = select(MailAccount.id).where(MailAccount.user_id == current_user.id)
+    stmt_accounts = select(MailAccount.id).where(
+        MailAccount.user_id == current_user.id,
+        MailAccount.deliver_to_dashboard == True
+    )
     if provider:
         stmt_accounts = stmt_accounts.where(MailAccount.provider == provider)
     res_accounts = await db.execute(stmt_accounts)
@@ -131,10 +134,10 @@ async def get_email_details(
             detail="Invalid email_id UUID format."
         )
         
-    # Join with MailAccount to verify user ownership in a single query
     stmt = select(Email).join(MailAccount).where(
         Email.id == email_uuid,
-        MailAccount.user_id == current_user.id
+        MailAccount.user_id == current_user.id,
+        MailAccount.deliver_to_dashboard == True
     )
     res = await db.execute(stmt)
     email = res.scalar_one_or_none()

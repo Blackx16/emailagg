@@ -1,6 +1,6 @@
 import json
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.db.models import User
 from app.core.config import settings
 from app.core.security import verify_telegram_init_data, create_access_token
+from app.core.limiter import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -17,7 +18,8 @@ class TelegramLoginSchema(BaseModel):
     initData: str
 
 @router.post("/telegram/login")
-async def telegram_login(payload: TelegramLoginSchema, db: AsyncSession = Depends(get_db)):
+@limiter.limit("20/minute")
+async def telegram_login(payload: TelegramLoginSchema, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Authenticate a user via Telegram WebApp initData query string.
     Verifies the cryptographic signature and issues a JWT access token.

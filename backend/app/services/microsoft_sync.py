@@ -93,19 +93,29 @@ class MicrosoftSyncService:
                     is_read=msg.get("isRead", False),
                     notified=False,
                 )
-                self.db.add(new_email)
-                await self.db.flush()  # Populate new_email.id
+
+                async with self.db.begin_nested():
+                    try:
+                        self.db.add(new_email)
+                        await self.db.flush()  # Populate new_email.id
+                    except Exception as e:
+                        from sqlalchemy.exc import IntegrityError
+                        if isinstance(e, IntegrityError) or "unique constraint" in str(e).lower():
+                            logger.info(f"Duplicate email skipped via unique constraint: {msg_id}")
+                            continue
+                        else:
+                            raise e
 
                 # Enqueue Telegram notification task
-                notification_payload = {
-                    "subject": new_email.subject or "(No Subject)",
-                    "from_name": new_email.from_name or "Unknown",
-                    "from_email": new_email.from_email or "Unknown",
-                    "mailbox": self.account.email,
-                    "email_id": str(new_email.id),
-                }
-
-                send_telegram_notification.delay(telegram_id, notification_payload)
+                if self.account.notify_telegram:
+                    notification_payload = {
+                        "subject": new_email.subject or "(No Subject)",
+                        "from_name": new_email.from_name or "Unknown",
+                        "from_email": new_email.from_email or "Unknown",
+                        "mailbox": self.account.email,
+                        "email_id": str(new_email.id),
+                    }
+                    send_telegram_notification.delay(telegram_id, notification_payload)
                 new_emails_count += 1
 
             # Update account sync logs
