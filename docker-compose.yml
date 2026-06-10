@@ -88,12 +88,12 @@ services:
       retries: 3
       start_period: 15s
 
-  # ─── Celery Worker (mail sync) ────────────────────────────────
-  worker:
+  # ─── Celery Worker: Email Sync ──────────────────────────────────
+  worker_sync:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: emailagg_worker
+    container_name: emailagg_worker_sync
     restart: unless-stopped
     env_file: .env
     volumes:
@@ -105,8 +105,85 @@ services:
         condition: service_healthy
     networks:
       - internal
-      - external  # Required: worker must reach Gmail/Microsoft APIs over the internet
-    command: celery -A app.workers.celery_app worker --loglevel=info --queues=sync,notifications --concurrency=4
+      - external  # Required: worker must reach Gmail/Microsoft/IMAP APIs
+    command: celery -A app.workers.celery_app worker --loglevel=info -Q sync --concurrency=8 --hostname=worker-sync@%h
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping --timeout 5 2>/dev/null | grep -q OK"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+  # ─── Celery Worker: Telegram Notifications ────────────────────────
+  worker_notifications:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: emailagg_worker_notifications
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+      - external  # Required: Telegram API calls
+    command: celery -A app.workers.celery_app worker --loglevel=info -Q notifications --concurrency=4 --hostname=worker-notify@%h
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping --timeout 5 2>/dev/null | grep -q OK"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+  # ─── Celery Worker: SMTP Forwarding ──────────────────────────────
+  worker_forwarding:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: emailagg_worker_forwarding
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+      - external  # Required: SMTP delivery to external servers
+    command: celery -A app.workers.celery_app worker --loglevel=info -Q forwarding --concurrency=2 --hostname=worker-fwd@%h
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping --timeout 5 2>/dev/null | grep -q OK"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+  # ─── Celery Worker: Maintenance / Orchestrator ────────────────────
+  worker_maintenance:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: emailagg_worker_maintenance
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+    command: celery -A app.workers.celery_app worker --loglevel=info -Q maintenance --concurrency=2 --hostname=worker-maint@%h
     healthcheck:
       test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping --timeout 5 2>/dev/null | grep -q OK"]
       interval: 60s
@@ -177,7 +254,8 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-      - /app/.next
+      # Note: .next is intentionally NOT volume-mounted so fresh builds always take effect.
+      # A stale anonymous volume here caused outdated UI to be served.
     depends_on:
       - backend
     networks:

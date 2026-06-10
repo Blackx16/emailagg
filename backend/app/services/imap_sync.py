@@ -21,7 +21,7 @@ class IMAPSyncService:
 
     async def sync(self):
         """Synchronize emails from custom IMAP mailbox."""
-        logger.info(f"Starting IMAP sync for {self.account.email}")
+        logger.info("Starting IMAP sync for account %s.", str(self.account.id)[-8:])
 
         # Decrypt app password
         password = decrypt_token(self.account.access_token_encrypted)

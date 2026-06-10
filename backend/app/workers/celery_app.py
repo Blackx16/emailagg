@@ -8,6 +8,7 @@ celery_app = Celery(
     include=[
         "app.workers.sync_tasks",
         "app.workers.notification_tasks",
+        "app.workers.forwarding_tasks",
     ],
 )
 
@@ -17,18 +18,30 @@ celery_app.conf.update(
     accept_content=["json"],
     timezone="UTC",
     enable_utc=True,
-    worker_prefetch_multiplier=1,        # fair distribution
-    task_acks_late=True,                 # ack after completion, not before
-    task_reject_on_worker_lost=True,     # re-queue on crash
+    # Fair distribution: don't pre-fetch tasks; process one at a time per worker slot
+    worker_prefetch_multiplier=1,
+    # Acknowledge task only after completion — safe re-queue on crash
+    task_acks_late=True,
+    task_reject_on_worker_lost=True,
+    # ── Queue routing ────────────────────────────────────────────────────────
+    # Each pipeline is isolated so a slow SMTP call never blocks Telegram alerts
+    # and a heavy IMAP poll never delays sync orchestration.
     task_routes={
-        "app.workers.sync_tasks.*": {"queue": "sync"},
+        "app.workers.sync_tasks.orchestrate_accounts": {"queue": "maintenance"},
+        "app.workers.sync_tasks.sync_account": {"queue": "sync"},
         "app.workers.notification_tasks.*": {"queue": "notifications"},
+        "app.workers.forwarding_tasks.*": {"queue": "forwarding"},
     },
+    # ── Beat schedule ────────────────────────────────────────────────────────
+    # A single lightweight orchestrator fires every SYNC_POLL_INTERVAL seconds.
+    # It queries the DB for all active accounts and distributes individual sync
+    # tasks with even spacing + random jitter so load is spread across the full
+    # polling window rather than hitting all at t=0 (thundering herd).
     beat_schedule={
-        # Poll all active accounts every SYNC_POLL_INTERVAL seconds
-        "poll-all-accounts": {
-            "task": "app.workers.sync_tasks.poll_all_accounts",
+        "orchestrate-accounts": {
+            "task": "app.workers.sync_tasks.orchestrate_accounts",
             "schedule": settings.SYNC_POLL_INTERVAL,
+            "options": {"queue": "maintenance"},
         },
     },
 )

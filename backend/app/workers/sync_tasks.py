@@ -1,3 +1,5 @@
+import math
+import random
 import logging
 import asyncio
 from functools import wraps
@@ -23,51 +25,92 @@ def async_to_sync(func):
     return wrapper
 
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=30,
+    queue="maintenance",
+    name="app.workers.sync_tasks.orchestrate_accounts",
+)
 @async_to_sync
-async def poll_all_accounts(self):
+async def orchestrate_accounts(self):
     """
-    Beat-scheduled task.
-    Queries active mailboxes and enqueues sync tasks.
+    Beat-scheduled orchestrator task.
+
+    Queries all non-disconnected mail accounts and distributes individual
+    sync tasks evenly across the SYNC_POLL_INTERVAL window with a small
+    random jitter.  This prevents a thundering herd at t=0 and makes load
+    self-scaling: adding more accounts spreads them further without any
+    config change.
+
+    Example (300 s window, 12 000 accounts):
+        Account 0    → countdown = 0.0 s ± jitter
+        Account 1    → countdown = 0.025 s ± jitter
+        Account N-1  → countdown = ~299.9 s ± jitter
     """
-    logger.info("poll_all_accounts triggered")
+    poll_interval = settings.SYNC_POLL_INTERVAL
+
     async with AsyncSessionLocal() as db:
-        # Fetch accounts that are not disconnected
         stmt = select(MailAccount.id).where(MailAccount.status != "disconnected")
         result = await db.execute(stmt)
         account_ids = result.scalars().all()
 
-        for account_id in account_ids:
-            sync_account.delay(str(account_id))
+    total = len(account_ids)
+    if not total:
+        logger.info("orchestrate_accounts: no active accounts — skipping.")
+        return
+
+    jitter_max = min(10.0, poll_interval / total / 2) if total > 1 else 0.0
+
+    for i, account_id in enumerate(account_ids):
+        # Evenly spread within the window
+        base_delay = (i / total) * poll_interval
+        jitter = random.uniform(-jitter_max, jitter_max)
+        countdown = max(0.0, base_delay + jitter)
+
+        sync_account.apply_async(
+            args=[str(account_id)],
+            countdown=countdown,
+            queue="sync",
+        )
+
+    logger.info(
+        "orchestrate_accounts: dispatched %d sync tasks across %ds window.",
+        total,
+        poll_interval,
+    )
 
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=120)
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=120,
+    queue="sync",
+    name="app.workers.sync_tasks.sync_account",
+)
 @async_to_sync
 async def sync_account(self, account_id: str):
     """
-    Synchronizes emails for a single mail account.
+    Synchronises emails for a single mail account.
     Uses a Redis lock to prevent concurrent syncs of the same account.
     """
     lock_key = f"sync_lock:{account_id}"
     lock = _sync_redis.lock(lock_key, timeout=300)  # 5-min lock timeout
 
     if not lock.acquire(blocking=False):
-        logger.info(f"Sync already running for {account_id}, skipping duplicate task.")
+        logger.info("Sync already running for %s — skipping duplicate.", account_id)
         return
 
     try:
-        logger.info("sync_account called for %s", account_id)
         async with AsyncSessionLocal() as db:
-            # Load mailbox account
             stmt = select(MailAccount).where(MailAccount.id == account_id)
             result = await db.execute(stmt)
             account = result.scalar_one_or_none()
 
             if not account or account.status == "disconnected":
-                logger.warning(f"MailAccount {account_id} not found or disconnected. Skipping.")
+                logger.warning("MailAccount %s not found or disconnected — skipping.", account_id)
                 return
 
-            # Mark account status as syncing
             account.status = "syncing"
             await db.commit()
 
@@ -85,17 +128,18 @@ async def sync_account(self, account_id: str):
                     service = IMAPSyncService(account, db)
                     await service.sync()
                 else:
-                    raise ValueError(f"Unknown mail provider: {account.provider}")
+                    raise ValueError(f"Unknown provider: {account.provider}")
+
             except Exception as exc:
-                logger.error("sync_account failed for %s: %s", account_id, exc)
-                # Rollback any broken transaction state before updating error status
+                logger.error("sync_account failed for %s: %s", account_id, type(exc).__name__)
                 await db.rollback()
                 account.status = "error"
-                account.error_message = str(exc)
+                account.error_message = str(exc)[:500]   # cap length — no full stack in DB
                 await db.commit()
                 raise self.retry(exc=exc)
+
     finally:
         try:
             lock.release()
         except redis_lib.exceptions.LockNotOwnedError:
-            pass  # Lock expired before we could release it
+            pass  # Lock expired before release — acceptable

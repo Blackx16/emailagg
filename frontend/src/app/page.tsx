@@ -119,6 +119,13 @@ export default function DashboardPage() {
   const [imapConnecting, setImapConnecting] = useState(false);
   const [imapError, setImapError] = useState<string | null>(null);
 
+  // Notification limit preferences
+  const [notifLimit, setNotifLimit] = useState<number>(20);
+  const [notifLimitFloor, setNotifLimitFloor] = useState<number>(5);
+  const [notifLimitEffective, setNotifLimitEffective] = useState<number>(20);
+  const [notifLimitSaving, setNotifLimitSaving] = useState(false);
+  const [notifLimitInput, setNotifLimitInput] = useState<string>("20");
+
   // Fetch accounts and emails
   const fetchData = async (
     isRefresh = false, 
@@ -235,7 +242,41 @@ export default function DashboardPage() {
     }
   };
 
-  // Toggle account preferences
+  // Fetch notification preferences
+  const fetchNotifPrefs = async () => {
+    if (!token) return;
+    try {
+      const data = await apiFetch("/api/v1/users/me/preferences", { token });
+      setNotifLimit(data.notification_limit_per_hour);
+      setNotifLimitInput(String(data.notification_limit_per_hour));
+      setNotifLimitFloor(data.floor);
+      setNotifLimitEffective(data.effective_limit);
+    } catch (err) {
+      console.error("Failed to fetch notification prefs:", err);
+    }
+  };
+
+  const saveNotifLimit = async () => {
+    const val = parseInt(notifLimitInput, 10);
+    if (isNaN(val) || val < 1) return;
+    setNotifLimitSaving(true);
+    try {
+      const data = await apiFetch("/api/v1/users/me/preferences", {
+        token,
+        method: "PUT",
+        body: { notification_limit_per_hour: val },
+      });
+      setNotifLimit(data.notification_limit_per_hour);
+      setNotifLimitInput(String(data.notification_limit_per_hour));
+      setNotifLimitFloor(data.floor);
+      setNotifLimitEffective(data.effective_limit);
+    } catch (err) {
+      console.error("Failed to save notification limit:", err);
+    } finally {
+      setNotifLimitSaving(false);
+    }
+  };
+
   const handleTogglePreference = async (
     accountId: string,
     key: "notify_telegram" | "deliver_to_dashboard" | "forward_enabled",
@@ -285,10 +326,14 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    if (token && activeTab === "mailboxes") {
+      fetchNotifPrefs();
+    }
     if (token && activeTab === "rules") {
       fetchRules();
     }
   }, [token, activeTab]);
+
 
   const handleAddRule = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -937,6 +982,44 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Notification Throttle Panel */}
+            <div className="p-4 rounded-2xl glass border border-slate-900 text-left space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="space-y-0.5">
+                  <h3 className="text-xs font-bold text-white">🔔 Notification Limit</h3>
+                  <p className="text-[10px] text-slate-400 leading-relaxed max-w-xs">
+                    Max Telegram alerts per hour. Floor is automatically set to{" "}
+                    <span className="text-indigo-400 font-bold">{notifLimitFloor}/hr</span>{" "}
+                    based on your {accounts.filter(a => a.status !== "disconnected").length} accounts.
+                  </p>
+                </div>
+                <span className="text-[10px] text-slate-500 bg-slate-900 border border-slate-800 px-2 py-1 rounded-lg shrink-0">
+                  effective: <b className="text-indigo-400">{notifLimitEffective}/hr</b>
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  min={1}
+                  value={notifLimitInput}
+                  onChange={(e) => setNotifLimitInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && saveNotifLimit()}
+                  className="w-20 px-2.5 py-1.5 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-center"
+                />
+                <span className="text-[10px] text-slate-400">per hour</span>
+                <button
+                  onClick={saveNotifLimit}
+                  disabled={notifLimitSaving}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-600 text-white text-[10px] font-semibold transition cursor-pointer disabled:opacity-50"
+                >
+                  {notifLimitSaving ? "Saving…" : "Save"}
+                </button>
+                {parseInt(notifLimitInput) < notifLimitFloor && (
+                  <span className="text-[9px] text-amber-400">⚠ Floor enforced ({notifLimitFloor}/hr)</span>
+                )}
+              </div>
+            </div>
+
             {/* List of Connected Mailboxes */}
             <div>
               <h3 className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-3 px-1 text-left">
@@ -1293,14 +1376,26 @@ export default function DashboardPage() {
       {showImapDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="max-w-md w-full glass-card border border-slate-800 rounded-2xl p-6 shadow-2xl text-left relative">
-            <h3 className="text-sm font-bold text-white flex items-center space-x-1.5 mb-2">
+            <h3 className="text-sm font-bold text-white flex items-center space-x-1.5 mb-3">
               <Mail className="h-4 w-4 text-indigo-400" />
               <span>Connect Custom IMAP Mailbox</span>
             </h3>
-            
-            <p className="text-[10px] text-slate-400 leading-relaxed mb-4">
-              Enter your provider's IMAP host and an <b>App Password</b> (not your raw primary password). Secure SSL connections on port 993 are enforced.
-            </p>
+
+            {/* Security warning — prominent */}
+            <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-300 leading-relaxed space-y-1">
+              <div className="flex items-center space-x-1.5 font-bold text-amber-400">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>App-Specific Password Required</span>
+              </div>
+              <p>
+                Never enter your main account password here. Use an <b>app password</b> generated separately:
+              </p>
+              <ul className="list-disc ml-4 space-y-0.5">
+                <li><b>Gmail:</b> Account → Security → 2-Step Verification → App Passwords</li>
+                <li><b>Outlook:</b> account.microsoft.com → Security → Advanced Security Options</li>
+                <li><b>Yahoo:</b> Account Security → Generate app password</li>
+              </ul>
+            </div>
 
             {imapError && (
               <div className="mb-4 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-[10px] text-rose-400 flex items-start space-x-1.5">

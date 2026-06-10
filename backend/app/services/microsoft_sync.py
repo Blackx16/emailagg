@@ -18,7 +18,7 @@ class MicrosoftSyncService:
 
     async def sync(self):
         """Synchronize emails from Microsoft Outlook inbox."""
-        logger.info(f"Starting Microsoft sync for {self.account.email}")
+        logger.info("Starting Microsoft sync for account %s.", str(self.account.id)[-8:])
 
         # Get valid access token
         access_token = await get_valid_access_token(self.account, self.db)
@@ -45,7 +45,7 @@ class MicrosoftSyncService:
             )
 
             if resp.status_code != 200:
-                raise ValueError(f"Microsoft Graph API call failed: {resp.text}")
+                raise ValueError(f"Microsoft Graph API call failed: HTTP {resp.status_code}")
 
             messages_data = resp.json()
             messages = messages_data.get("value", [])

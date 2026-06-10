@@ -22,7 +22,7 @@ class GmailSyncService:
         Uses Gmail History API for incremental sync when a historyId is stored,
         falling back to messages.list for the initial sync or when history expires.
         """
-        logger.info(f"Starting Gmail sync for {self.account.email}")
+        logger.info("Starting Gmail sync for account %s.", str(self.account.id)[-8:])
 
         # Get valid access token
         access_token = await get_valid_access_token(self.account, self.db)
@@ -48,7 +48,7 @@ class GmailSyncService:
             self.account.error_message = None
             await self.db.commit()
 
-            logger.info(f"Gmail sync finished. Synced {new_count} new emails.")
+            logger.info("Gmail sync finished for account %s. Synced %d new emails.", str(self.account.id)[-8:], new_count)
 
     async def _sync_via_history(
         self, client: httpx.AsyncClient, headers: dict, telegram_id: int
@@ -66,13 +66,14 @@ class GmailSyncService:
         if resp.status_code == 404:
             # historyId expired (Gmail only keeps ~30 days). Fall back to full sync.
             logger.warning(
-                f"Gmail historyId expired for {self.account.email}, falling back to full sync."
+                "Gmail historyId expired for account %s, falling back to full sync.",
+                str(self.account.id)[-8:],
             )
             self.account.history_id = None
             return await self._sync_via_messages_list(client, headers, telegram_id)
 
         if resp.status_code != 200:
-            raise ValueError(f"Gmail history.list failed: {resp.text}")
+            raise ValueError(f"Gmail history.list failed: HTTP {resp.status_code}")
 
         history_data = resp.json()
 
@@ -115,7 +116,7 @@ class GmailSyncService:
 
         resp = await client.get(list_url, params=params, headers=headers)
         if resp.status_code != 200:
-            raise ValueError(f"Gmail messages list failed: {resp.text}")
+            raise ValueError(f"Gmail messages.list failed: HTTP {resp.status_code}")
 
         list_data = resp.json()
         messages = list_data.get("messages", [])
@@ -171,7 +172,9 @@ class GmailSyncService:
             )
             if detail_resp.status_code != 200:
                 logger.error(
-                    f"Failed to fetch Gmail message details for {msg_id}: {detail_resp.text}"
+                    "Failed to fetch Gmail message details for msg_id %s: HTTP %d",
+                    msg_id,
+                    detail_resp.status_code,
                 )
                 continue
 
@@ -212,7 +215,7 @@ class GmailSyncService:
                 except Exception as e:
                     from sqlalchemy.exc import IntegrityError
                     if isinstance(e, IntegrityError) or "unique constraint" in str(e).lower():
-                        logger.info(f"Duplicate email skipped via unique constraint: {msg_id}")
+                        logger.debug("Duplicate email skipped (msg_id already stored).")
                         continue
                     else:
                         raise e
