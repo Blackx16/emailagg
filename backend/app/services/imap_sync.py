@@ -175,6 +175,9 @@ class IMAPSyncService:
                             raise e
 
                 # Enqueue Telegram notification task
+                from app.services.forwarding_service import extract_otp, check_and_forward
+                otp = extract_otp(new_email.subject, new_email.snippet)
+
                 if self.account.notify_telegram:
                     notification_payload = {
                         "subject": new_email.subject or "(No Subject)",
@@ -183,7 +186,12 @@ class IMAPSyncService:
                         "mailbox": self.account.email,
                         "email_id": str(new_email.id),
                     }
+                    if otp:
+                        notification_payload["otp"] = otp
                     send_telegram_notification.delay(telegram_id, notification_payload)
+
+                # Check forwarding rules
+                await check_and_forward(new_email, self.account, self.db)
                 new_emails_count += 1
 
             # Update account sync logs

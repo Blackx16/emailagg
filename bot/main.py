@@ -5,7 +5,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 
-from bot.handlers import start, connect, accounts, help, disconnect, settings
+from bot.handlers import start, connect, accounts, help, disconnect, settings, rules
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,6 +24,7 @@ async def main():
     dp.include_router(help.router)
     dp.include_router(disconnect.router)
     dp.include_router(settings.router)
+    dp.include_router(rules.router)
 
     logger.info("Setting chat menu button...")
     try:

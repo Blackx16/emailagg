@@ -72,8 +72,11 @@ async def send_telegram_notification(self, user_telegram_id: int, email_data: di
         escaped_from_email = html.escape(from_email)
         escaped_mailbox = html.escape(mailbox)
 
+        otp = email_data.get("otp")
+        otp_prefix = f"🔑 <b>Verification Code:</b> <code>{html.escape(otp)}</code>\n\n" if otp else ""
+
         text = (
-            "📩 <b>New Email Received</b>\n\n"
+            f"{otp_prefix}📩 <b>New Email Received</b>\n\n"
             f"<b>From:</b> {escaped_from_name} &lt;{escaped_from_email}&gt;\n"
             f"<b>Subject:</b> {escaped_subject}\n"
             f"<b>Mailbox:</b> {escaped_mailbox}\n\n"

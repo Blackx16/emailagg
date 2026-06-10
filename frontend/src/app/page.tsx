@@ -23,7 +23,8 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Filter
+  Filter,
+  Sliders
 } from "lucide-react";
 
 interface Account {
@@ -59,8 +60,33 @@ export default function DashboardPage() {
   const [devLoginLoading, setDevLoginLoading] = useState(false);
   const [devLoginError, setDevLoginError] = useState<string | null>(null);
   
-  // Tab states: "inbox" | "mailboxes"
-  const [activeTab, setActiveTab] = useState<"inbox" | "mailboxes">("inbox");
+  // Tab states: "inbox" | "mailboxes" | "rules"
+  const [activeTab, setActiveTab] = useState<"inbox" | "mailboxes" | "rules">("inbox");
+
+  // Read initial tab from URL parameters or hash
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "rules" || tabParam === "mailboxes" || tabParam === "inbox") {
+        setActiveTab(tabParam);
+      } else if (window.location.hash === "#rules") {
+        setActiveTab("rules");
+      }
+    }
+  }, []);
+
+  // Rules Engine states
+  const [rules, setRules] = useState<any[]>([]);
+  const [rulesLoading, setRulesLoading] = useState(false);
+  const [showAddRuleForm, setShowAddRuleForm] = useState(false);
+  const [newRuleScope, setNewRuleScope] = useState<string>("global");
+  const [newRuleSubject, setNewRuleSubject] = useState("");
+  const [newRuleFromDomain, setNewRuleFromDomain] = useState("");
+  const [newRuleFromEmail, setNewRuleFromEmail] = useState("");
+  const [newRuleBody, setNewRuleBody] = useState("");
+  const [newRuleTarget, setNewRuleTarget] = useState("");
+  const [ruleSubmitting, setRuleSubmitting] = useState(false);
   
   // Core data states
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -241,6 +267,99 @@ export default function DashboardPage() {
         setAccounts(prev => prev.map(a => a.id === accountId ? { ...a, [key]: originalAccount[key] } : a));
       }
       alert(err.message || "Failed to update preferences.");
+    }
+  };
+
+  // Rules CRUD Handlers
+  const fetchRules = async () => {
+    if (!token) return;
+    setRulesLoading(true);
+    try {
+      const data = await apiFetch("/api/v1/rules", { token });
+      setRules(data);
+    } catch (err: any) {
+      console.error("Failed to fetch rules:", err);
+    } finally {
+      setRulesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token && activeTab === "rules") {
+      fetchRules();
+    }
+  }, [token, activeTab]);
+
+  const handleAddRule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRuleTarget) return;
+    setRuleSubmitting(true);
+    try {
+      const body = {
+        mail_account_id: newRuleScope === "global" ? null : newRuleScope,
+        condition_subject_contains: newRuleSubject || null,
+        condition_from_domain: newRuleFromDomain || null,
+        condition_from_email: newRuleFromEmail || null,
+        condition_body_contains: newRuleBody || null,
+        forward_to_email: newRuleTarget,
+        is_active: true
+      };
+      const newRule = await apiFetch("/api/v1/rules", {
+        method: "POST",
+        token,
+        body
+      });
+      setRules(prev => [newRule, ...prev]);
+      setShowAddRuleForm(false);
+      // Clear form
+      setNewRuleSubject("");
+      setNewRuleFromDomain("");
+      setNewRuleFromEmail("");
+      setNewRuleBody("");
+      setNewRuleTarget("");
+    } catch (err: any) {
+      alert(err.message || "Failed to create rule.");
+    } finally {
+      setRuleSubmitting(false);
+    }
+  };
+
+  const handleToggleRuleActive = async (ruleId: string, value: boolean) => {
+    setRules(prev => prev.map(r => r.id === ruleId ? { ...r, is_active: value } : r));
+    try {
+      const rule = rules.find(r => r.id === ruleId);
+      if (!rule) return;
+      const body = {
+        mail_account_id: rule.mail_account_id,
+        condition_subject_contains: rule.condition_subject_contains,
+        condition_from_domain: rule.condition_from_domain,
+        condition_from_email: rule.condition_from_email,
+        condition_body_contains: rule.condition_body_contains,
+        forward_to_email: rule.forward_to_email,
+        is_active: value
+      };
+      await apiFetch(`/api/v1/rules/${ruleId}`, {
+        method: "PUT",
+        token,
+        body
+      });
+    } catch (err: any) {
+      // Rollback
+      setRules(prev => prev.map(r => r.id === ruleId ? { ...r, is_active: !value } : r));
+      alert(err.message || "Failed to update rule.");
+    }
+  };
+
+  const handleDeleteRule = async (ruleId: string) => {
+    if (!confirm("Are you sure you want to delete this forwarding rule?")) return;
+    try {
+      await apiFetch(`/api/v1/rules/${ruleId}`, {
+        method: "DELETE",
+        token
+      });
+      setRules(prev => prev.filter(r => r.id !== ruleId));
+    } catch (err: any) {
+      alert(err.message || "Failed to delete rule.");
     }
   };
 
@@ -479,7 +598,7 @@ export default function DashboardPage() {
 
       {/* Tabs Switcher */}
       <div className="p-4 pb-2 max-w-4xl w-full mx-auto">
-        <div className="grid grid-cols-2 p-1 bg-slate-950/80 border border-slate-900 rounded-xl">
+        <div className="grid grid-cols-3 p-1 bg-slate-950/80 border border-slate-900 rounded-xl">
           <button
             onClick={() => { setActiveTab("inbox"); setSelectedEmail(null); }}
             className={`py-2 px-3 flex items-center justify-center space-x-2 text-xs font-semibold rounded-lg transition duration-200 cursor-pointer ${
@@ -489,7 +608,7 @@ export default function DashboardPage() {
             }`}
           >
             <Inbox className="h-4 w-4" />
-            <span>📩 Central Inbox</span>
+            <span>📩 Inbox</span>
           </button>
           <button
             onClick={() => { setActiveTab("mailboxes"); setSelectedEmail(null); }}
@@ -500,7 +619,18 @@ export default function DashboardPage() {
             }`}
           >
             <Settings className="h-4 w-4" />
-            <span>⚙️ Mailboxes ({accounts.filter(a => a.status !== "disconnected").length}/{user.plan === "free" ? 3 : user.plan === "pro" ? 25 : 100})</span>
+            <span>⚙️ Mailboxes ({accounts.filter(a => a.status !== "disconnected").length})</span>
+          </button>
+          <button
+            onClick={() => { setActiveTab("rules"); setSelectedEmail(null); }}
+            className={`py-2 px-3 flex items-center justify-center space-x-2 text-xs font-semibold rounded-lg transition duration-200 cursor-pointer ${
+              activeTab === "rules"
+                ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md glow-indigo"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <Sliders className="h-4 w-4" />
+            <span>📤 Rules</span>
           </button>
         </div>
       </div>
@@ -939,6 +1069,221 @@ export default function DashboardPage() {
               </div>
             </div>
 
+          </div>
+        )}
+
+        {!dataLoading && activeTab === "rules" && (
+          <div className="space-y-6">
+            
+            {/* Header / Add Rule Button */}
+            <div className="flex items-center justify-between text-left">
+              <div className="space-y-1">
+                <h3 className="text-xs font-bold text-white">Email Forwarding Rules</h3>
+                <p className="text-[10px] text-slate-400">
+                  Configure custom rules to forward incoming emails to external addresses.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAddRuleForm(!showAddRuleForm)}
+                className="py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer shadow shadow-indigo-600/30"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>{showAddRuleForm ? "Hide Form" : "New Rule"}</span>
+              </button>
+            </div>
+
+            {/* Add Rule Form */}
+            {showAddRuleForm && (
+              <form onSubmit={handleAddRule} className="p-5 rounded-2xl glass border border-slate-900 text-left space-y-4">
+                <h4 className="text-xs font-bold text-white mb-2">Create New Forwarding Rule</h4>
+
+                {/* Scope Selection */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 block">Scope (Connected Account)</label>
+                  <select
+                    value={newRuleScope}
+                    onChange={(e) => setNewRuleScope(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 cursor-pointer"
+                  >
+                    <option value="global">All Connected Mailboxes (Global)</option>
+                    {accounts.filter(a => a.status !== "disconnected").map(acc => (
+                      <option key={acc.id} value={acc.id}>Only: {acc.email}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Conditions Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 block">Subject Contains</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Verification code, OTP"
+                      value={newRuleSubject}
+                      onChange={(e) => setNewRuleSubject(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 block">From Domain</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. netflix.com, google.com"
+                      value={newRuleFromDomain}
+                      onChange={(e) => setNewRuleFromDomain(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 block">From Email Address</label>
+                    <input
+                      type="email"
+                      placeholder="e.g. info@netflix.com"
+                      value={newRuleFromEmail}
+                      onChange={(e) => setNewRuleFromEmail(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 block">Body Contains</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. single-use, security code"
+                      value={newRuleBody}
+                      onChange={(e) => setNewRuleBody(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                {/* Target Address (Required) */}
+                <div className="space-y-1.5 pt-1">
+                  <label className="text-[10px] font-bold text-slate-400 block">Forward To (Target Email) *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. customer@outlook.com"
+                    value={newRuleTarget}
+                    onChange={(e) => setNewRuleTarget(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddRuleForm(false)}
+                    className="py-1.5 px-4 rounded-xl border border-slate-800 hover:bg-slate-900 text-slate-400 text-xs font-semibold transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={ruleSubmitting}
+                    className="py-1.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-900 text-white text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer shadow shadow-indigo-600/30"
+                  >
+                    {ruleSubmitting && <Loader2 className="h-3 w-3 animate-spin mr-1 shrink-0" />}
+                    <span>Create Rule</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* List of Rules */}
+            {rulesLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 text-indigo-500 animate-spin mb-2" />
+                <p className="text-[10px] text-slate-400">Loading forwarding rules...</p>
+              </div>
+            ) : rules.length === 0 ? (
+              <div className="p-8 text-center glass-card rounded-2xl border border-slate-900 text-slate-400 text-xs">
+                No forwarding rules defined yet. Click "New Rule" above to get started.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {rules.map((rule) => {
+                  const scopeAccount = accounts.find(a => a.id === rule.mail_account_id);
+                  return (
+                    <div key={rule.id} className="p-4 rounded-2xl glass-card text-left border border-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-2.5 flex-1">
+                        {/* Scope Indicator */}
+                        <div className="flex items-center space-x-2">
+                          <span className={`text-[8px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded ${
+                            rule.mail_account_id ? "bg-slate-900 border border-slate-805 text-slate-400" : "bg-indigo-950/60 border border-indigo-900/40 text-indigo-400"
+                          }`}>
+                            {rule.mail_account_id ? "Scoped Rule" : "Global Rule"}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {rule.mail_account_id ? `Applies to: ${scopeAccount?.email || 'Unknown Mailbox'}` : 'Applies to: All mailboxes'}
+                          </span>
+                        </div>
+
+                        {/* Forward Destination */}
+                        <div>
+                          <p className="text-xs font-bold text-white flex items-center">
+                            <span>Forward to:</span>
+                            <span className="ml-1.5 text-indigo-400 underline decoration-indigo-800/40 select-all">{rule.forward_to_email}</span>
+                          </p>
+                        </div>
+
+                        {/* Match Conditions List */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {rule.condition_subject_contains && (
+                            <span className="text-[9px] bg-slate-950 border border-slate-900 rounded px-1.5 py-0.5 text-slate-400">
+                              Subject contains: <b>"{rule.condition_subject_contains}"</b>
+                            </span>
+                          )}
+                          {rule.condition_from_domain && (
+                            <span className="text-[9px] bg-slate-950 border border-slate-900 rounded px-1.5 py-0.5 text-slate-400">
+                              From domain: <b>{rule.condition_from_domain}</b>
+                            </span>
+                          )}
+                          {rule.condition_from_email && (
+                            <span className="text-[9px] bg-slate-950 border border-slate-900 rounded px-1.5 py-0.5 text-slate-400">
+                              From email: <b>{rule.condition_from_email}</b>
+                            </span>
+                          )}
+                          {rule.condition_body_contains && (
+                            <span className="text-[9px] bg-slate-950 border border-slate-900 rounded px-1.5 py-0.5 text-slate-400">
+                              Body contains: <b>"{rule.condition_body_contains}"</b>
+                            </span>
+                          )}
+                          {!rule.condition_subject_contains && !rule.condition_from_domain && !rule.condition_from_email && !rule.condition_body_contains && (
+                            <span className="text-[9px] bg-emerald-950/40 border border-emerald-900/20 rounded px-1.5 py-0.5 text-emerald-400 italic">
+                              Matches all incoming emails
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Rule Actions (Toggle Active / Delete) */}
+                      <div className="flex items-center space-x-3.5 self-end md:self-center">
+                        <label className="flex items-center space-x-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={rule.is_active}
+                            onChange={(e) => handleToggleRuleActive(rule.id, e.target.checked)}
+                            className="accent-indigo-600 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
+                          />
+                          <span className="text-[10px] font-bold text-slate-400">Active</span>
+                        </label>
+                        
+                        <button
+                          onClick={() => handleDeleteRule(rule.id)}
+                          className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-950/30 hover:bg-rose-950/15 transition cursor-pointer"
+                          title="Delete Rule"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

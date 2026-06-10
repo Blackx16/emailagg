@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     SYNC_POLL_INTERVAL: int = 300
     SYNC_BATCH_SIZE: int = 50
 
+    # SMTP Forwarding Settings
+    SMTP_HOST: str = "localhost"
+    SMTP_PORT: int = 465
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_ADDRESS: str = ""
+
     @property
     def CORS_ORIGINS(self) -> list[str]:
         return [self.FRONTEND_URL, "http://localhost:3000"]

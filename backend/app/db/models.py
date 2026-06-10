@@ -32,6 +32,7 @@ class User(Base):
 
     mail_accounts: Mapped[list["MailAccount"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     notifications: Mapped[list["Notification"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    forwarding_rules: Mapped[list["ForwardingRule"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     # Plan limits
     PLAN_LIMITS = {"free": 500, "pro": 25, "agency": 100}
@@ -77,6 +78,7 @@ class MailAccount(Base):
 
     user: Mapped["User"] = relationship(back_populates="mail_accounts")
     emails: Mapped[list["Email"]] = relationship(back_populates="mail_account", cascade="all, delete-orphan")
+    forwarding_rules: Mapped[list["ForwardingRule"]] = relationship(back_populates="mail_account", cascade="all, delete-orphan")
 
 
 # ─── Emails ───────────────────────────────────────────────────
@@ -121,3 +123,24 @@ class Notification(Base):
 
     user: Mapped["User"] = relationship(back_populates="notifications")
     email: Mapped["Email"] = relationship(back_populates="notifications")
+
+
+# ─── Forwarding Rules ─────────────────────────────────────────
+class ForwardingRule(Base):
+    __tablename__ = "forwarding_rules"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    mail_account_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("mail_accounts.id", ondelete="CASCADE"), nullable=True, index=True)
+
+    condition_subject_contains: Mapped[str | None] = mapped_column(Text, nullable=True)
+    condition_from_domain: Mapped[str | None] = mapped_column(Text, nullable=True)
+    condition_from_email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    condition_body_contains: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    forward_to_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user: Mapped["User"] = relationship(back_populates="forwarding_rules")
+    mail_account: Mapped["MailAccount"] = relationship(back_populates="forwarding_rules")
