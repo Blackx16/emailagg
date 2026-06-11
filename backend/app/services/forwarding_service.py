@@ -168,5 +168,6 @@ async def _send_forward(email: Email, account: MailAccount, to_email: str):
         password=settings.SMTP_PASSWORD,
         use_tls=use_tls,
         start_tls=start_tls,
+        timeout=10.0,
     )
     logger.info(f"Successfully forwarded email to {to_email}")
