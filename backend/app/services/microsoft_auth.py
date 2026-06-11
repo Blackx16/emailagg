@@ -20,7 +20,7 @@ async def get_login_url(telegram_id: int) -> str:
         "response_type": "code",
         "redirect_uri": settings.MICROSOFT_REDIRECT_URI,
         "response_mode": "query",
-        "scope": "offline_access Mail.Read User.Read",
+        "scope": "offline_access Mail.Read Mail.Send User.Read",
         "state": state_token,
     }
     encoded = urllib.parse.urlencode(params)
@@ -36,7 +36,7 @@ async def exchange_code(code: str) -> dict:
         "grant_type": "authorization_code",
         "code": code,
         "redirect_uri": settings.MICROSOFT_REDIRECT_URI,
-        "scope": "offline_access Mail.Read User.Read",
+        "scope": "offline_access Mail.Read Mail.Send User.Read",
     }
 
     transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
@@ -80,7 +80,7 @@ async def refresh_tokens(refresh_token: str) -> dict:
         "client_secret": settings.MICROSOFT_CLIENT_SECRET,
         "grant_type": "refresh_token",
         "refresh_token": refresh_token,
-        "scope": "offline_access Mail.Read User.Read",
+        "scope": "offline_access Mail.Read Mail.Send User.Read",
     }
 
     transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")

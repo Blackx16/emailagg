@@ -1,6 +1,8 @@
 import logging
 import re
 import uuid
+import base64
+import httpx
 import aiosmtplib
 from datetime import datetime
 from email.mime.text import MIMEText
@@ -11,6 +13,7 @@ from sqlalchemy import select, or_
 from app.db.models import MailAccount, Email, ForwardingRule
 from app.core.config import settings
 from app.core.redis import get_redis
+from app.services.token_service import get_valid_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +91,7 @@ async def check_and_forward(email: Email, account: MailAccount, db: AsyncSession
 
                 # Send forward email via SMTP
                 logger.info(f"Forwarding email {email.id} to {rule.forward_to_email} via rule {rule.id}")
-                await _send_forward(email, account, rule.forward_to_email)
+                await _send_forward(email, account, rule.forward_to_email, db)
                 forwarded_any = True
 
         return forwarded_any
@@ -125,21 +128,12 @@ def _matches(email: Email, rule: ForwardingRule) -> bool:
     return True
 
 
-async def _send_forward(email: Email, account: MailAccount, to_email: str):
-    """SMTP delivery for forwarded email using configured SMTP settings."""
-    if not settings.SMTP_HOST or not settings.SMTP_USER:
-        logger.error("SMTP_HOST or SMTP_USER is not configured in environment settings. Cannot send forward.")
-        return
-
+async def _send_forward(email: Email, account: MailAccount, to_email: str, db: AsyncSession):
+    """Deliver forwarded email using Google/Microsoft APIs for OAuth accounts or SMTP fallback."""
     # Check for OTP to display in forwarding subject/body
     otp = extract_otp(email.subject, email.snippet)
     otp_tag = f" [OTP: {otp}]" if otp else ""
-
-    msg = MIMEMultipart()
-    msg["Subject"] = f"Fwd: {email.subject or '(No Subject)'}{otp_tag}"
-    msg["From"] = settings.SMTP_FROM_ADDRESS or settings.SMTP_USER
-    msg["To"] = to_email
-    msg["X-Forwarded-By"] = "EmailAgg"
+    subject = f"Fwd: {email.subject or '(No Subject)'}{otp_tag}"
 
     header_section = (
         f"---------- Forwarded from {account.email} via EmailAgg ----------\n"
@@ -150,24 +144,95 @@ async def _send_forward(email: Email, account: MailAccount, to_email: str):
     if otp:
         header_section += f"Extracted OTP Code: {otp}\n"
     header_section += "--------------------------------------------------------\n\n"
-
     body_content = header_section + (email.snippet or "(No body preview available)")
-    msg.attach(MIMEText(body_content, "plain"))
 
-    # Determine encryption parameters from SMTP Port
-    use_tls = (settings.SMTP_PORT == 465)
-    start_tls = (settings.SMTP_PORT == 587)
+    if account.provider == "google":
+        logger.info(f"Forwarding via Gmail API from {account.email}")
+        access_token = await get_valid_access_token(account, db)
+        
+        msg = MIMEMultipart()
+        msg["Subject"] = subject
+        msg["From"] = account.email
+        msg["To"] = to_email
+        msg["X-Forwarded-By"] = "EmailAgg"
+        msg.attach(MIMEText(body_content, "plain"))
 
-    logger.debug(f"Sending SMTP email via {settings.SMTP_HOST}:{settings.SMTP_PORT} (TLS={use_tls}, StartTLS={start_tls})")
+        raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+        url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+        transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+        async with httpx.AsyncClient(transport=transport, timeout=10.0) as client:
+            resp = await client.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/json",
+                },
+                json={"raw": raw_message},
+            )
+            if resp.status_code != 200:
+                raise ValueError(f"Gmail API forwarding failed: HTTP {resp.status_code} - {resp.text}")
+        logger.info(f"Successfully forwarded email via Gmail API to {to_email}")
 
-    await aiosmtplib.send(
-        msg,
-        hostname=settings.SMTP_HOST,
-        port=settings.SMTP_PORT,
-        username=settings.SMTP_USER,
-        password=settings.SMTP_PASSWORD,
-        use_tls=use_tls,
-        start_tls=start_tls,
-        timeout=10.0,
-    )
-    logger.info(f"Successfully forwarded email to {to_email}")
+    elif account.provider == "microsoft":
+        logger.info(f"Forwarding via Microsoft Graph API from {account.email}")
+        access_token = await get_valid_access_token(account, db)
+
+        payload = {
+            "message": {
+                "subject": subject,
+                "body": {
+                    "contentType": "Text",
+                    "content": body_content
+                },
+                "toRecipients": [
+                    {
+                        "emailAddress": {
+                            "address": to_email
+                        }
+                    }
+                ]
+            },
+            "saveToSentItems": False
+        }
+        url = "https://graph.microsoft.com/v1.0/me/sendMail"
+        transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+        async with httpx.AsyncClient(transport=transport, timeout=10.0) as client:
+            resp = await client.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            if resp.status_code != 202:
+                raise ValueError(f"Microsoft Graph API forwarding failed: HTTP {resp.status_code} - {resp.text}")
+        logger.info(f"Successfully forwarded email via Microsoft Graph API to {to_email}")
+
+    else:
+        # Fallback to SMTP for custom IMAP mailboxes
+        if not settings.SMTP_HOST or not settings.SMTP_USER:
+            raise ValueError("SMTP_HOST or SMTP_USER is not configured in environment settings. Cannot send SMTP forward.")
+
+        msg = MIMEMultipart()
+        msg["Subject"] = subject
+        msg["From"] = settings.SMTP_FROM_ADDRESS or settings.SMTP_USER
+        msg["To"] = to_email
+        msg["X-Forwarded-By"] = "EmailAgg"
+        msg.attach(MIMEText(body_content, "plain"))
+
+        use_tls = (settings.SMTP_PORT == 465)
+        start_tls = (settings.SMTP_PORT == 587)
+
+        logger.debug(f"Sending SMTP email via {settings.SMTP_HOST}:{settings.SMTP_PORT} (TLS={use_tls}, StartTLS={start_tls})")
+        await aiosmtplib.send(
+            msg,
+            hostname=settings.SMTP_HOST,
+            port=settings.SMTP_PORT,
+            username=settings.SMTP_USER,
+            password=settings.SMTP_PASSWORD,
+            use_tls=use_tls,
+            start_tls=start_tls,
+            timeout=10.0,
+        )
+        logger.info(f"Successfully forwarded email via SMTP to {to_email}")

@@ -179,11 +179,100 @@ async def test_redis_forward_rate_limit():
     print("✅ Redis forward rate limit test passed successfully!")
 
 
+async def test_api_forwarding():
+    print("\n--- Testing API Forwarding Mock ---")
+    from unittest.mock import AsyncMock, patch
+    
+    class MockMailAccount:
+        def __init__(self, id, user_id, email, provider, forward_enabled):
+            self.id = id
+            self.user_id = user_id
+            self.email = email
+            self.provider = provider
+            self.forward_enabled = forward_enabled
+            self.access_token_encrypted = "dummy"
+            self.refresh_token_encrypted = "dummy"
+            self.token_expires_at = datetime.now(timezone.utc)
+
+    class MockEmail:
+        def __init__(self, id, subject, snippet, from_name, from_email, received_at):
+            self.id = id
+            self.subject = subject
+            self.snippet = snippet
+            self.from_name = from_name
+            self.from_email = from_email
+            self.received_at = received_at
+
+    user_id = uuid.uuid4()
+    gmail_account = MockMailAccount(uuid.uuid4(), user_id, "test@gmail.com", "google", True)
+    ms_account = MockMailAccount(uuid.uuid4(), user_id, "test@outlook.com", "microsoft", True)
+    
+    email = MockEmail(uuid.uuid4(), "OTP code: 9988", "Your code is 9988", "Sender", "sender@test.com", datetime.now(timezone.utc))
+    
+    rule = ForwardingRule(
+        user_id=user_id,
+        condition_subject_contains="OTP",
+        forward_to_email="forwarded@target.com",
+        is_active=True
+    )
+
+    # Mock DB execute to return our rule
+    from unittest.mock import MagicMock
+    mock_db = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [rule]
+    mock_db.execute.return_value = mock_result
+    
+    # Mock get_valid_access_token
+    with patch("app.services.forwarding_service.get_valid_access_token", new_callable=AsyncMock) as mock_get_token:
+        mock_get_token.return_value = "mocked-access-token"
+        
+        # Mock httpx.AsyncClient.post
+        mock_response = AsyncMock()
+        mock_response.status_code = 200
+        mock_response.text = "{}"
+        
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_response
+            
+            # Run check_and_forward for Google
+            from app.services.forwarding_service import check_and_forward
+            res = await check_and_forward(email, gmail_account, mock_db)
+            assert res is True
+            mock_post.assert_called_once()
+            
+            # Check Google API endpoint was hit
+            args, kwargs = mock_post.call_args
+            assert args[0] == "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+            assert kwargs["headers"]["Authorization"] == "Bearer mocked-access-token"
+            
+        # Mock httpx.AsyncClient.post for Microsoft
+        mock_response_ms = AsyncMock()
+        mock_response_ms.status_code = 202
+        mock_response_ms.text = "{}"
+        
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post_ms:
+            mock_post_ms.return_value = mock_response_ms
+            
+            # Run check_and_forward for Microsoft
+            res = await check_and_forward(email, ms_account, mock_db)
+            assert res is True
+            mock_post_ms.assert_called_once()
+            
+            # Check Microsoft Graph API endpoint was hit
+            args, kwargs = mock_post_ms.call_args
+            assert args[0] == "https://graph.microsoft.com/v1.0/me/sendMail"
+            assert kwargs["headers"]["Authorization"] == "Bearer mocked-access-token"
+            
+    print("✅ API-based Google & Microsoft Graph forwarding tests passed successfully!")
+
+
 async def main():
     test_otp_extraction()
     test_rule_matching()
     await test_db_uniqueness()
     await test_redis_forward_rate_limit()
+    await test_api_forwarding()
     print("\n🎉 All integration tests run inside the container passed successfully!")
 
 
