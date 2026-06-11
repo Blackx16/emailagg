@@ -251,11 +251,6 @@ services:
     container_name: emailagg_frontend
     restart: unless-stopped
     env_file: .env
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      # Note: .next is intentionally NOT volume-mounted so fresh builds always take effect.
-      # A stale anonymous volume here caused outdated UI to be served.
     depends_on:
       - backend
     networks:
