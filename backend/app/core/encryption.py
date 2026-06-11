@@ -9,6 +9,11 @@ def encrypt_token(plain: str) -> str:
     return _fernet.encrypt(plain.encode()).decode()
 
 
-def decrypt_token(encrypted: str) -> str:
+def decrypt_token(encrypted: str | None) -> str:
     """Decrypt a stored OAuth token."""
-    return _fernet.decrypt(encrypted.encode()).decode()
+    if not encrypted:
+        raise ValueError("Credential token is empty or missing")
+    try:
+        return _fernet.decrypt(encrypted.encode()).decode()
+    except Exception as e:
+        raise ValueError(f"Credential decryption failed: {e}")

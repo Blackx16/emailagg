@@ -38,7 +38,8 @@ async def exchange_code(code: str) -> dict:
         "redirect_uri": settings.GOOGLE_REDIRECT_URI,
     }
 
-    async with httpx.AsyncClient() as client:
+    transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+    async with httpx.AsyncClient(transport=transport, timeout=30.0) as client:
         # Exchange code for tokens
         resp = await client.post(token_url, data=data)
         if resp.status_code != 200:
@@ -80,7 +81,8 @@ async def refresh_tokens(refresh_token: str) -> dict:
         "grant_type": "refresh_token",
     }
 
-    async with httpx.AsyncClient() as client:
+    transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+    async with httpx.AsyncClient(transport=transport, timeout=30.0) as client:
         resp = await client.post(token_url, data=data)
         if resp.status_code != 200:
             raise ValueError(f"Google token refresh failed: {resp.text}")

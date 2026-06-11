@@ -37,7 +37,8 @@ class MicrosoftSyncService:
             )
             params["$filter"] = f"receivedDateTime ge {last_sync_iso}"
 
-        async with httpx.AsyncClient() as client:
+        transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+        async with httpx.AsyncClient(transport=transport, timeout=30.0) as client:
             resp = await client.get(
                 url,
                 params=params,

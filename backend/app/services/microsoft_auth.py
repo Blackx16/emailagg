@@ -39,7 +39,8 @@ async def exchange_code(code: str) -> dict:
         "scope": "offline_access Mail.Read User.Read",
     }
 
-    async with httpx.AsyncClient() as client:
+    transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+    async with httpx.AsyncClient(transport=transport, timeout=30.0) as client:
         # Exchange code for tokens
         resp = await client.post(token_url, data=data)
         if resp.status_code != 200:
@@ -82,7 +83,8 @@ async def refresh_tokens(refresh_token: str) -> dict:
         "scope": "offline_access Mail.Read User.Read",
     }
 
-    async with httpx.AsyncClient() as client:
+    transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+    async with httpx.AsyncClient(transport=transport, timeout=30.0) as client:
         resp = await client.post(token_url, data=data)
         if resp.status_code != 200:
             raise ValueError(f"Microsoft token refresh failed: {resp.text}")

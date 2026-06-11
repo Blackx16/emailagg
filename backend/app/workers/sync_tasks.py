@@ -136,7 +136,12 @@ async def sync_account(self, account_id: str):
                 account.status = "error"
                 account.error_message = str(exc)[:500]   # cap length — no full stack in DB
                 await db.commit()
-                raise self.retry(exc=exc)
+                
+                # Do not retry on permanent credential or value configuration errors
+                if isinstance(exc, ValueError) and any(word in str(exc).lower() for word in ["credential", "token", "decrypt", "provider"]):
+                    logger.warning("Permanent config/credential error for %s — skipping retry.", account_id)
+                else:
+                    raise self.retry(exc=exc)
 
     finally:
         try:

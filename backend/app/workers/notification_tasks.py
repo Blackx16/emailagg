@@ -74,7 +74,8 @@ async def send_telegram_message(chat_id: int, text: str, reply_markup: dict = No
     if reply_markup:
         payload["reply_markup"] = reply_markup
 
-    async with httpx.AsyncClient() as client:
+    transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+    async with httpx.AsyncClient(transport=transport, timeout=30.0) as client:
         resp = await client.post(url, json=payload)
         if resp.status_code != 200:
             raise ValueError(f"Telegram API error: {resp.status_code}")

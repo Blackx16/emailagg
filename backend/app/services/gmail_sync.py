@@ -32,7 +32,8 @@ class GmailSyncService:
         user_result = await self.db.execute(stmt)
         telegram_id = user_result.scalar_one()
 
-        async with httpx.AsyncClient() as client:
+        transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+        async with httpx.AsyncClient(transport=transport, timeout=30.0) as client:
             headers = {"Authorization": f"Bearer {access_token}"}
 
             if self.account.history_id:
