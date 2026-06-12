@@ -223,7 +223,7 @@ services:
       - external
     ports:
       - "5555:5555"
-    command: celery -A app.workers.celery_app flower --port=5555 --basic_auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD}
+    command: celery -A app.workers.celery_app flower --port=5555 --url_prefix=flower --basic_auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD}
 
   # ─── Telegram Bot ─────────────────────────────────────────────
   bot:
