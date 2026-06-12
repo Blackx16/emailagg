@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmailAgg — Unified Email Aggregation & Telegram Alert SaaS</title>
+  <meta name="description" content="Sync Gmail, Outlook, and IMAP. Get instant Telegram alerts, direct API forwarding, and smart OTP extraction. Secure and open-source.">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background Elements -->
+  <div class="grid-overlay"></div>
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="container nav-container">
+      <div class="logo">
+        <i class="fa-solid fa-envelope-open-text logo-icon"></i>
+        <span>Email<span class="logo-accent">Agg</span></span>
+      </div>
+      <nav>
+        <a href="#features">Features</a>
+        <a href="#demo">Live Demo</a>
+        <a href="#rules">Rules Engine</a>
+        <a href="#architecture">Architecture</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="https://github.com/Blackx16/emailagg" class="btn btn-secondary" target="_blank">
+          <i class="fa-brands fa-github"></i> GitHub Repo
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-container">
+      <div class="hero-badge">
+        <i class="fa-solid fa-circle-nodes"></i> Now supports Google & Microsoft Direct API Forwarding
+      </div>
+      <h1>Unified Email Aggregation <br><span class="gradient-text">Meets Instant Forwarding</span></h1>
+      <p class="hero-desc">
+        Connect unlimited Gmail, Outlook, and custom IMAP accounts. Receive zero-delay Telegram alerts, configure advanced forwarding rules, and automatically extract OTP verification codes. Secure, fast, and completely self-hosted.
+      </p>
+      <div class="hero-buttons">
+        <a href="#demo" class="btn btn-primary">Try Interactive Demo</a>
+        <a href="https://github.com/Blackx16/emailagg#quick-start-local-dev" class="btn btn-secondary" target="_blank">
+          <i class="fa-solid fa-terminal"></i> Quick Start Guide
+        </a>
+      </div>
+      <div class="hero-meta">
+        <span><i class="fa-solid fa-lock text-success"></i> AES-256 Token Encryption</span>
+        <span><i class="fa-solid fa-bolt text-success"></i> Instant Webhook Hooks</span>
+        <span><i class="fa-solid fa-infinity text-success"></i> Unlimited Inboxes</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Demo Section -->
+  <section id="demo" class="demo-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge">Interactive Simulation</span>
+        <h2>See EmailAgg in Action</h2>
+        <p>Click one of the mock emails below to simulate syncing it and receiving an instant, formatted alert in Telegram.</p>
+      </div>
+
+      <div class="demo-grid">
+        <!-- Inbox Card -->
+        <div class="demo-card glass-card">
+          <div class="card-header">
+            <div class="header-title">
+              <i class="fa-solid fa-inbox text-indigo"></i>
+              <span>Simulated Inbox</span>
+            </div>
+            <div class="header-dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
+          <div class="inbox-list" id="inboxList">
+            <!-- Mock Email 1 -->
+            <div class="email-item active" onclick="simulateEmail(0)">
+              <div class="email-icon provider-netflix">
+                <i class="fa-solid fa-n"></i>
+              </div>
+              <div class="email-meta">
+                <div class="email-top">
+                  <span class="email-sender">Netflix Security</span>
+                  <span class="email-time">Just Now</span>
+                </div>
+                <div class="email-subject">Netflix: your sign-in code</div>
+                <div class="email-body">Enter this code to sign in: 5722. This code will expire in 15 minutes.</div>
+              </div>
+              <div class="email-badge-unread"></div>
+            </div>
+            <!-- Mock Email 2 -->
+            <div class="email-item" onclick="simulateEmail(1)">
+              <div class="email-icon provider-google">
+                <i class="fa-brands fa-google"></i>
+              </div>
+              <div class="email-meta">
+                <div class="email-top">
+                  <span class="email-sender">Google Account Security</span>
+                  <span class="email-time">2m ago</span>
+                </div>
+                <div class="email-subject">Google Verification Code: 498302</div>
+                <div class="email-body">Your Google verification code is 498302. Do not share it with anyone else.</div>
+              </div>
+            </div>
+            <!-- Mock Email 3 -->
+            <div class="email-item" onclick="simulateEmail(2)">
+              <div class="email-icon provider-microsoft">
+                <i class="fa-brands fa-microsoft"></i>
+              </div>
+              <div class="email-meta">
+                <div class="email-top">
+                  <span class="email-sender">Microsoft Accounts</span>
+                  <span class="email-time">10m ago</span>
+                </div>
+                <div class="email-subject">Microsoft Account Password Reset Code</div>
+                <div class="email-body">To reset your password, use code 88294. If you didn't request this, ignore.</div>
+              </div>
+            </div>
+            <!-- Mock Email 4 -->
+            <div class="email-item" onclick="simulateEmail(3)">
+              <div class="email-icon provider-github">
+                <i class="fa-brands fa-github"></i>
+              </div>
+              <div class="email-meta">
+                <div class="email-top">
+                  <span class="email-sender">GitHub Support</span>
+                  <span class="email-time">1h ago</span>
+                </div>
+                <div class="email-subject">[GitHub] Security Alert: New login detected</div>
+                <div class="email-body">A login was detected from a new IP address on your account. Review details...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telegram Phone Mockup -->
+        <div class="phone-mockup">
+          <div class="phone-frame">
+            <div class="phone-screen">
+              <div class="telegram-header">
+                <div class="telegram-back"><i class="fa-solid fa-arrow-left"></i></div>
+                <div class="telegram-title">
+                  <span class="bot-name">EmailAgg Bot</span>
+                  <span class="bot-status">bot</span>
+                </div>
+                <div class="telegram-menu"><i class="fa-solid fa-ellipsis-vertical"></i></div>
+              </div>
+              <div class="chat-area" id="chatArea">
+                <div class="chat-system-date">TODAY</div>
+                <div class="chat-message bot">
+                  <div class="message-text">
+                    🤖 <b>EmailAgg Bot Activated</b><br>
+                    Use /connect to link a Gmail, Outlook, or IMAP account.<br>
+                    Use /rules to check forwarding status.
+                  </div>
+                  <div class="message-time">10:00 AM</div>
+                </div>
+                <!-- Simulated Dynamic Alert -->
+                <div class="chat-message bot alert-message hidden" id="simulatedAlert">
+                  <div class="message-text" id="alertText">
+                    <!-- Dynamic Alert Goes Here -->
+                  </div>
+                  <div class="message-time" id="alertTime">Just Now</div>
+                </div>
+              </div>
+              <div class="telegram-input">
+                <i class="fa-regular fa-face-smile"></i>
+                <input type="text" placeholder="Message" readonly>
+                <i class="fa-solid fa-paperclip"></i>
+                <div class="send-icon"><i class="fa-solid fa-microphone"></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge">Robust & Secure</span>
+        <h2>Engineered for Power Users</h2>
+        <p>Say goodbye to complex server routes and unsecure password databases. EmailAgg handles the aggregation for you securely.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card glass-card">
+          <div class="feature-icon"><i class="fa-solid fa-paper-plane"></i></div>
+          <h3>Direct API Sending</h3>
+          <p>Sends forwarded emails directly from your own Gmail or Microsoft account via official REST APIs. No third-party SMTP relays or spam risks.</p>
+        </div>
+        <div class="feature-card glass-card">
+          <div class="feature-icon"><i class="fa-solid fa-key"></i></div>
+          <h3>Smart OTP Parser</h3>
+          <p>Extracts numeric and alphanumeric verification codes automatically. Displays the OTP as a copyable badge in Telegram so you don't even have to open the message.</p>
+        </div>
+        <div class="feature-card glass-card">
+          <div class="feature-icon"><i class="fa-solid fa-filter"></i></div>
+          <h3>Granular Rules Engine</h3>
+          <p>Create routing rules based on subject keywords, domains, exact senders, or body content. Scope rules to specific accounts or globally.</p>
+        </div>
+        <div class="feature-card glass-card">
+          <div class="feature-icon"><i class="fa-solid fa-lock"></i></div>
+          <h3>Fernet AES Encryption</h3>
+          <p>We do not store passwords. Google and Microsoft accounts use OAuth 2.0. Custom IMAP account passwords are encrypted at rest with Fernet cryptography.</p>
+        </div>
+        <div class="feature-card glass-card">
+          <div class="feature-icon"><i class="fa-solid fa-gauge-high"></i></div>
+          <h3>Redis Rate Limits</h3>
+          <p>Includes an automatic hourly notification and forwarding limit (up to 50/hour) to prevent email forwarding loops and secure IP reputation.</p>
+        </div>
+        <div class="feature-card glass-card">
+          <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+          <h3>Fast Sync & History API</h3>
+          <p>Leverages Gmail History API for incremental updates. Instead of scanning the entire inbox, only fetches changes since the last sync history ID.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Rules Simulator Section -->
+  <section id="rules" class="rules-section">
+    <div class="container">
+      <div class="rules-simulator glass-card">
+        <div class="sim-left">
+          <span class="badge">Interactive Configurator</span>
+          <h2>Forwarding Rules Simulator</h2>
+          <p>Test how the bot filters and forwards messages. Set a condition on the left, then click "Run Rule Test" to see the output.</p>
+          <div class="rule-form">
+            <div class="form-group">
+              <label>Filter Match Condition</label>
+              <select id="ruleCondition" class="form-control">
+                <option value="netflix">Subject contains 'Netflix'</option>
+                <option value="google">Subject contains 'Google'</option>
+                <option value="github">From Domain is 'github.com'</option>
+                <option value="none">Any Email (No Filter)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Forward To Email</label>
+              <input type="text" class="form-control" value="forwarded@mycompany.com" readonly>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="runRuleTest()">Run Rule Test</button>
+          </div>
+        </div>
+        <div class="sim-right">
+          <div class="terminal-window">
+            <div class="terminal-header">
+              <span class="term-dot close"></span>
+              <span class="term-dot minimize"></span>
+              <span class="term-dot maximize"></span>
+              <span class="term-title">emailagg-engine-log</span>
+            </div>
+            <div class="terminal-body" id="terminalLog">
+              <span class="log-line text-muted">[system] engine initialized. awaiting triggers...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture Section -->
+  <section id="architecture" class="arch-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge">SaaS Stack</span>
+        <h2>System Architecture</h2>
+        <p>A decoupled microservice framework built to deploy smoothly on any cloud provider via Docker Compose.</p>
+      </div>
+
+      <div class="arch-grid">
+        <div class="arch-card glass-card">
+          <div class="arch-num">01</div>
+          <h3>FastAPI Backend</h3>
+          <p>Exposes robust, rate-limited REST endpoints for the dashboard and bot. Authenticates users with JWT bearer tokens.</p>
+        </div>
+        <div class="arch-card glass-card">
+          <div class="arch-num">02</div>
+          <h3>Celery Workers</h3>
+          <p>Concurrency pool powered by Redis. Dispatches async synchronization tasks, notification alerts, and API forwarding triggers.</p>
+        </div>
+        <div class="arch-card glass-card">
+          <div class="arch-num">03</div>
+          <h3>Next.js Dashboard</h3>
+          <p>Built with TailwindCSS & TypeScript. Clean state management for managing connected mailboxes, rules, and alert preferences.</p>
+        </div>
+        <div class="arch-card glass-card">
+          <div class="arch-num">04</div>
+          <h3>aiogram Bot</h3>
+          <p>Asynchronous Telegram bot. Provides `/start`, `/connect`, `/rules`, and `/settings` commands with secure deep linking.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-container">
+      <div class="logo">
+        <i class="fa-solid fa-envelope-open-text logo-icon"></i>
+        <span>Email<span class="logo-accent">Agg</span></span>
+      </div>
+      <p>Securely aggregates, alerts, and forwards your emails. Open-source under MIT.</p>
+      <div class="footer-links">
+        <a href="https://github.com/Blackx16/emailagg" target="_blank"><i class="fa-brands fa-github"></i> GitHub</a>
+        <a href="https://github.com/Blackx16/emailagg/issues" target="_blank"><i class="fa-solid fa-bug"></i> Issues</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+</body>
+</html>

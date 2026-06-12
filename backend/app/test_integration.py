@@ -181,7 +181,7 @@ async def test_redis_forward_rate_limit():
 
 async def test_api_forwarding():
     print("\n--- Testing API Forwarding Mock ---")
-    from unittest.mock import AsyncMock, patch
+    from unittest.mock import AsyncMock, patch, MagicMock
     
     class MockMailAccount:
         def __init__(self, id, user_id, email, provider, forward_enabled):
@@ -195,8 +195,9 @@ async def test_api_forwarding():
             self.token_expires_at = datetime.now(timezone.utc)
 
     class MockEmail:
-        def __init__(self, id, subject, snippet, from_name, from_email, received_at):
+        def __init__(self, id, message_id, subject, snippet, from_name, from_email, received_at):
             self.id = id
+            self.message_id = message_id
             self.subject = subject
             self.snippet = snippet
             self.from_name = from_name
@@ -207,7 +208,7 @@ async def test_api_forwarding():
     gmail_account = MockMailAccount(uuid.uuid4(), user_id, "test@gmail.com", "google", True)
     ms_account = MockMailAccount(uuid.uuid4(), user_id, "test@outlook.com", "microsoft", True)
     
-    email = MockEmail(uuid.uuid4(), "OTP code: 9988", "Your code is 9988", "Sender", "sender@test.com", datetime.now(timezone.utc))
+    email = MockEmail(uuid.uuid4(), "msg-1234", "OTP code: 9988", "Your code is 9988", "Sender", "sender@test.com", datetime.now(timezone.utc))
     
     rule = ForwardingRule(
         user_id=user_id,
@@ -217,7 +218,6 @@ async def test_api_forwarding():
     )
 
     # Mock DB execute to return our rule
-    from unittest.mock import MagicMock
     mock_db = AsyncMock()
     mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = [rule]
@@ -227,42 +227,85 @@ async def test_api_forwarding():
     with patch("app.services.forwarding_service.get_valid_access_token", new_callable=AsyncMock) as mock_get_token:
         mock_get_token.return_value = "mocked-access-token"
         
-        # Mock httpx.AsyncClient.post
-        mock_response = AsyncMock()
-        mock_response.status_code = 200
-        mock_response.text = "{}"
+        # 1. Test Gmail forwarding (with on-demand GET to fetch HTML body)
+        mock_gmail_get_response = MagicMock()
+        mock_gmail_get_response.status_code = 200
+        mock_gmail_get_response.json.return_value = {
+            "payload": {
+                "mimeType": "multipart/alternative",
+                "parts": [
+                    {
+                        "mimeType": "text/plain",
+                        "body": {"data": "ZW50ZXIgdGhpcyBjb2Rl"}  # base64url encoded
+                    },
+                    {
+                        "mimeType": "text/html",
+                        "body": {"data": "PGh0bWw+ZW50ZXIgdGhpcyBjb2RlPC9odG1sPg=="}  # base64url encoded
+                    }
+                ]
+            }
+        }
         
-        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
-            mock_post.return_value = mock_response
+        mock_gmail_post_response = AsyncMock()
+        mock_gmail_post_response.status_code = 200
+        mock_gmail_post_response.text = "{}"
+        
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get, \
+             patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+             
+            mock_get.return_value = mock_gmail_get_response
+            mock_post.return_value = mock_gmail_post_response
             
             # Run check_and_forward for Google
             from app.services.forwarding_service import check_and_forward
             res = await check_and_forward(email, gmail_account, mock_db)
             assert res is True
+            
+            # Verify full message payload was fetched
+            mock_get.assert_called_once()
+            get_args, get_kwargs = mock_get.call_args
+            assert "messages/msg-1234?format=full" in get_args[0]
+            
+            # Verify message was posted
             mock_post.assert_called_once()
+            post_args, post_kwargs = mock_post.call_args
+            assert post_args[0] == "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+            assert post_kwargs["headers"]["Authorization"] == "Bearer mocked-access-token"
             
-            # Check Google API endpoint was hit
-            args, kwargs = mock_post.call_args
-            assert args[0] == "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
-            assert kwargs["headers"]["Authorization"] == "Bearer mocked-access-token"
-            
-        # Mock httpx.AsyncClient.post for Microsoft
-        mock_response_ms = AsyncMock()
-        mock_response_ms.status_code = 202
-        mock_response_ms.text = "{}"
+        # 2. Test Microsoft Outlook forwarding (with on-demand GET to fetch HTML body)
+        mock_ms_get_response = MagicMock()
+        mock_ms_get_response.status_code = 200
+        mock_ms_get_response.json.return_value = {
+            "body": {
+                "contentType": "html",
+                "content": "<html>Microsoft Graph HTML</html>"
+            }
+        }
         
-        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post_ms:
-            mock_post_ms.return_value = mock_response_ms
+        mock_ms_post_response = AsyncMock()
+        mock_ms_post_response.status_code = 202
+        mock_ms_post_response.text = "{}"
+        
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get_ms, \
+             patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post_ms:
+             
+            mock_get_ms.return_value = mock_ms_get_response
+            mock_post_ms.return_value = mock_ms_post_response
             
             # Run check_and_forward for Microsoft
             res = await check_and_forward(email, ms_account, mock_db)
             assert res is True
-            mock_post_ms.assert_called_once()
             
-            # Check Microsoft Graph API endpoint was hit
-            args, kwargs = mock_post_ms.call_args
-            assert args[0] == "https://graph.microsoft.com/v1.0/me/sendMail"
-            assert kwargs["headers"]["Authorization"] == "Bearer mocked-access-token"
+            # Verify body was fetched
+            mock_get_ms.assert_called_once()
+            get_args, get_kwargs = mock_get_ms.call_args
+            assert "messages/msg-1234?$select=body" in get_args[0]
+            
+            # Verify message was posted
+            mock_post_ms.assert_called_once()
+            post_args, post_kwargs = mock_post_ms.call_args
+            assert post_args[0] == "https://graph.microsoft.com/v1.0/me/sendMail"
+            assert post_kwargs["headers"]["Authorization"] == "Bearer mocked-access-token"
             
     print("✅ API-based Google & Microsoft Graph forwarding tests passed successfully!")
 

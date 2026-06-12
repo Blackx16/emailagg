@@ -190,8 +190,17 @@ class IMAPSyncService:
                         notification_payload["otp"] = otp
                     send_telegram_notification.delay(telegram_id, notification_payload)
 
+                # Extract HTML/text bodies for forwarding
+                html_body, text_body = self._get_email_bodies(msg)
+
                 # Check forwarding rules
-                await check_and_forward(new_email, self.account, self.db)
+                await check_and_forward(
+                    new_email,
+                    self.account,
+                    self.db,
+                    original_html=html_body,
+                    original_text=text_body,
+                )
                 new_emails_count += 1
 
             # Update account sync logs
@@ -244,3 +253,30 @@ class IMAPSyncService:
                 if "attachment" in content_disposition:
                     return True
         return False
+
+    def _get_email_bodies(self, msg) -> tuple[str | None, str | None]:
+        html_body = None
+        text_body = None
+        if msg.is_multipart():
+            for part in msg.walk():
+                content_type = part.get_content_type()
+                content_disposition = str(part.get("Content-Disposition"))
+                if "attachment" not in content_disposition:
+                    if content_type == "text/plain" and not text_body:
+                        payload = part.get_payload(decode=True)
+                        if payload:
+                            text_body = payload.decode("utf-8", errors="ignore")
+                    elif content_type == "text/html" and not html_body:
+                        payload = part.get_payload(decode=True)
+                        if payload:
+                            html_body = payload.decode("utf-8", errors="ignore")
+        else:
+            content_type = msg.get_content_type()
+            payload = msg.get_payload(decode=True)
+            if payload:
+                val = payload.decode("utf-8", errors="ignore")
+                if content_type == "text/html":
+                    html_body = val
+                else:
+                    text_body = val
+        return html_body, text_body
