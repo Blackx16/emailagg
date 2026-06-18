@@ -108,11 +108,11 @@ class GmailSyncService:
         list_url = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
         params = {"maxResults": 50, "q": "label:INBOX"}
 
-        # Only fetch messages after last sync time
-        if self.account.last_sync:
-            after_timestamp = int(
-                self.account.last_sync.replace(tzinfo=timezone.utc).timestamp()
-            )
+        # Only fetch messages after last sync time or creation time
+        sync_start_time = self.account.last_sync or self.account.created_at
+        if sync_start_time:
+            sync_start_utc = sync_start_time if sync_start_time.tzinfo else sync_start_time.replace(tzinfo=timezone.utc)
+            after_timestamp = int(sync_start_utc.timestamp())
             params["q"] += f" after:{after_timestamp}"
 
         resp = await client.get(list_url, params=params, headers=headers)
@@ -194,6 +194,14 @@ class GmailSyncService:
 
             from_name, from_email = self._parse_from_header(from_header)
             received_at = self._parse_date_header(date_header)
+
+            # Skip if email was received before the account was connected/created
+            if received_at:
+                received_at_utc = received_at.astimezone(timezone.utc) if received_at.tzinfo else received_at.replace(tzinfo=timezone.utc)
+                created_at_utc = self.account.created_at.astimezone(timezone.utc) if self.account.created_at.tzinfo else self.account.created_at.replace(tzinfo=timezone.utc)
+                if received_at_utc < created_at_utc:
+                    logger.info("Gmail: Skipping message %s received before account registration (%s < %s)", msg_id, received_at_utc, created_at_utc)
+                    continue
 
             # Create Email record
             new_email = Email(

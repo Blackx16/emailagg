@@ -143,6 +143,9 @@ async def connect_imap(
         existing_account.imap_host = payload.imap_host
         existing_account.imap_port = payload.imap_port
         existing_account.status = "active"
+        existing_account.notify_telegram = True
+        existing_account.deliver_to_dashboard = True
+        existing_account.forward_enabled = True
         existing_account.error_message = None
         await db.commit()
         account_id = existing_account.id
@@ -248,6 +251,9 @@ async def register_oauth_account(
         existing_account.token_expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
         existing_account.status = "active"
         existing_account.error_message = None
+        existing_account.notify_telegram = True
+        existing_account.deliver_to_dashboard = True
+        existing_account.forward_enabled = True
         await db.commit()
         account_id = existing_account.id
 

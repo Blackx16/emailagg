@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import (
     Boolean, DateTime, Enum, ForeignKey,
     Integer, String, Text, func, BigInteger, UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -75,7 +76,7 @@ class MailAccount(Base):
     history_id: Mapped[str | None] = mapped_column(String(64), nullable=True)  # Gmail historyId for incremental sync
     notify_telegram: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     deliver_to_dashboard: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    forward_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    forward_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["User"] = relationship(back_populates="mail_accounts")

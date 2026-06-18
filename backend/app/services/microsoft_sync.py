@@ -30,12 +30,12 @@ class MicrosoftSyncService:
             "$orderby": "receivedDateTime desc",
         }
 
-        # Query messages received since last_sync
-        if self.account.last_sync:
-            last_sync_iso = (
-                self.account.last_sync.replace(tzinfo=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-            )
-            params["$filter"] = f"receivedDateTime ge {last_sync_iso}"
+        # Query messages received since last_sync or creation time
+        sync_start_time = self.account.last_sync or self.account.created_at
+        if sync_start_time:
+            sync_start_utc = sync_start_time if sync_start_time.tzinfo else sync_start_time.replace(tzinfo=timezone.utc)
+            sync_start_iso = sync_start_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+            params["$filter"] = f"receivedDateTime ge {sync_start_iso}"
 
         transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
         async with httpx.AsyncClient(transport=transport, timeout=30.0) as client:
@@ -80,6 +80,14 @@ class MicrosoftSyncService:
                 if received_str:
                     # Clean trailing Z to handle Python datetime conversions
                     received_at = datetime.fromisoformat(received_str.replace("Z", "+00:00"))
+
+                # Skip if email was received before the account was connected/created
+                if received_at:
+                    received_at_utc = received_at.astimezone(timezone.utc) if received_at.tzinfo else received_at.replace(tzinfo=timezone.utc)
+                    created_at_utc = self.account.created_at.astimezone(timezone.utc) if self.account.created_at.tzinfo else self.account.created_at.replace(tzinfo=timezone.utc)
+                    if received_at_utc < created_at_utc:
+                        logger.info("Microsoft: Skipping message %s received before account registration (%s < %s)", msg_id, received_at_utc, created_at_utc)
+                        continue
 
                 # Create Email record
                 new_email = Email(

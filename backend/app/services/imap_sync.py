@@ -44,9 +44,11 @@ class IMAPSyncService:
                 raise ValueError(f"IMAP select INBOX failed: {select_resp.result}")
 
             # Define search criteria (UID-based)
-            if self.account.last_sync:
+            sync_start_time = self.account.last_sync or self.account.created_at
+            if sync_start_time:
                 # IMAP SINCE expects DD-Mon-YYYY format (e.g. 04-Jun-2026)
-                since_date = self.account.last_sync.strftime("%d-%b-%Y")
+                sync_start_utc = sync_start_time if sync_start_time.tzinfo else sync_start_time.replace(tzinfo=timezone.utc)
+                since_date = sync_start_utc.strftime("%d-%b-%Y")
                 search_resp = await imap_client.uid("search", f"SINCE {since_date}")
             else:
                 search_resp = await imap_client.uid("search", "ALL")
@@ -144,6 +146,13 @@ class IMAPSyncService:
                         pass
                 if not received_at:
                     received_at = datetime.now(timezone.utc)
+
+                # Skip if email was received before the account was connected/created
+                received_at_utc = received_at.astimezone(timezone.utc) if received_at.tzinfo else received_at.replace(tzinfo=timezone.utc)
+                created_at_utc = self.account.created_at.astimezone(timezone.utc) if self.account.created_at.tzinfo else self.account.created_at.replace(tzinfo=timezone.utc)
+                if received_at_utc < created_at_utc:
+                    logger.info("IMAP: Skipping message %s received before account registration (%s < %s)", message_id, received_at_utc, created_at_utc)
+                    continue
 
                 snippet = self._get_email_snippet(msg)
                 has_attachment = self._check_attachments(msg)
