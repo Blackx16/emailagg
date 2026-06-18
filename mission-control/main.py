@@ -50,7 +50,6 @@ templates = Jinja2Templates(directory="/app/templates")
 # Middleware for HTTP Basic Authentication
 @app.middleware("http")
 async def basic_auth_middleware(request: Request, call_next):
-    print(f"[DEBUG] Path: {request.scope.get('path')} | Root: {request.scope.get('root_path')} | URL: {request.url.path}", flush=True)
     # Allow access to login page and api/static assets without auth
     # We use request.scope["path"] so it remains agnostic of the root_path prefix
     path = request.scope.get("path", "")
