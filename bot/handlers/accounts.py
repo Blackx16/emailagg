@@ -90,12 +90,23 @@ async def cmd_accounts(message: Message):
             except Exception:
                 time_desc = "Recent"
 
-        text += f"{i}. <b>{email}</b> ({provider})\n"
-        text += f"   Status: {status_desc}\n"
-        text += f"   Last Sync: {time_desc}\n"
+        block = f"{i}. <b>{email}</b> ({provider})\n"
+        block += f"   Status: {status_desc}\n"
+        block += f"   Last Sync: {time_desc}\n"
         if status == "error" and error_msg:
-            text += f"   <i>Error: {error_msg}</i>\n"
-        text += "\n"
+            block += f"   <i>Error: {error_msg}</i>\n"
+        block += "\n"
 
-    text += "Use /connect to link a new mailbox."
+        if len(text) + len(block) > 4000:
+            await message.answer(text)
+            text = ""
+        text += block
+
+    suffix = "Use /connect to link a new mailbox."
+    if len(text) + len(suffix) > 4000:
+        await message.answer(text)
+        text = suffix
+    else:
+        text += suffix
+
     await message.answer(text)

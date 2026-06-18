@@ -259,6 +259,30 @@ services:
     ports:
       - "3000:3000"
 
+  # ─── Mission Control Dashboard ───────────────────────────────
+  mission-control:
+    build:
+      context: ./mission-control
+      dockerfile: Dockerfile
+    container_name: emailagg_mission_control
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: ${POSTGRES_USER:-emailagg}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-emailagg}
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:-admin}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+      - external
+
   # ─── Nginx Reverse Proxy ──────────────────────────────────────
   nginx:
     image: nginx:alpine

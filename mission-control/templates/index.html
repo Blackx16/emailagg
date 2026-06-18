@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission Control Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .service-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .service-name { font-weight: bold; margin-bottom: 10px; color: #333; }
+        .status-running { color: #28a745; font-weight: bold; }
+        .status-exited { color: #dc3545; font-weight: bold; }
+        .status-unknown { color: #ffc107; font-weight: bold; }
+        .health-healthy { color: #28a745; font-weight: bold; }
+        .health-unhealthy { color: #dc3545; font-weight: bold; }
+        .health-unknown { color: #ffc107; font-weight: bold; }
+        .user-analytics, .resource-usage { background: white; border-radius: 8px; padding: 20px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
+        .nav a:hover { text-decoration: underline; }
+        footer { text-align: center; margin-top: 40px; color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Mission Control Dashboard</h1>
+            <p>VPS Health, Security, and Application Audit</p>
+            <div class="nav">
+                <a href="/control/">Dashboard</a>
+                <a href="/control/api/v1/logs/emailagg_backend" target="_blank">Backend Logs</a>
+                <a href="/control/api/v1/errors/emailagg_bot" target="_blank">Bot Errors</a>
+                <a href="/control/login">Logout</a>
+            </div>
+        </div>
+        
+        <div class="user-analytics">
+            <h2>👥 User Analytics</h2>
+            <p><strong>Total Users:</strong> {{ user_analytics.total_users if user_analytics.total_users is not none else "N/A" }}</p>
+            <p><strong>Recently Active (24h):</strong> {{ user_analytics.recently_active_users_count if user_analytics.recently_active_users_count is not none else "N/A" }}</p>
+            <p><strong>Active Mailboxes:</strong> {{ user_analytics.active_mailboxes if user_analytics.active_mailboxes is not none else "N/A" }}</p>
+            <p>{{ user_analytics.message }}</p>
+        </div>
+
+        <div class="service-grid">
+            {% for service_name, service_info in services.items() %}
+            <div class="service-card">
+                <div class="service-name">{{ service_name }}</div>
+                <div class="status">
+                    Status: <span class="status-{{ service_info.status }}">{{ service_info.status }}</span>
+                </div>
+                {% if service_info.health != "unknown" %}
+                <div class="health">
+                    Health: <span class="health-{{ service_info.health }}">{{ service_info.health }}</span>
+                </div>
+                {% endif %}
+                {% if service_info.details %}
+                <div class="details" style="font-size: 0.9em; color: #666; margin-top: 10px;">{{ service_info.details }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="resource-usage">
+            <h2>💻 System Resources (Host)</h2>
+            <p><strong>CPU Load (1m, 5m, 15m):</strong> {{ system_resources.cpu_load }}</p>
+            <p><strong>RAM Usage:</strong> {{ system_resources.ram_usage }}</p>
+            <p><strong>Disk Usage:</strong> {{ system_resources.disk_usage }}</p>
+            <p><small>Note: Host-level resource metrics read directly from host /proc file system via docker mount.</small></p>
+        </div>
+
+        <footer>
+            <p>Mission Control Dashboard v0.1.0 &copy; 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

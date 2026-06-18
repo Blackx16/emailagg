@@ -7,6 +7,9 @@ import httpx
 
 from bot.keyboards.inline import get_start_keyboard
 
+# Specific httpx exceptions for clearer error handling
+HTTPX_EXCEPTIONS = (httpx.RequestError, httpx.TimeoutException, httpx.HTTPStatusError)
+
 logger = logging.getLogger(__name__)
 router = Router()
 
@@ -32,9 +35,12 @@ async def cmd_start(message: Message):
             else:
                 status_txt = "⚠️ API Status Warning"
                 logger.warning(f"Registration failed: {resp.text}")
-    except Exception as e:
-        logger.error(f"Error calling registration API: {e}")
+    except HTTPX_EXCEPTIONS as e:
+        logger.error(f"Network error calling registration API: {e}")
         status_txt = "⚠️ Local sync active (network offline)"
+    except Exception as e:
+        logger.critical(f"Unexpected error in registration API call: {e}", exc_info=True)
+        status_txt = "⚠️ Something went wrong"
 
     welcome_text = (
         "👋 <b>Welcome to EmailAgg!</b>\n\n"
