@@ -7,6 +7,8 @@ import docker
 import base64
 from datetime import datetime, timedelta, timezone
 import psycopg2
+from collections import deque
+import asyncio
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s")
@@ -75,6 +77,36 @@ async def basic_auth_middleware(request: Request, call_next):
     response.headers["WWW-Authenticate"] = "Basic"
     return response
 
+# Store historical system resource metrics
+system_metrics_history = deque(maxlen=360)  # 60 minutes of data at 10s intervals
+
+@app.on_event("startup")
+async def start_background_tasks():
+    async def collect_metrics():
+        while True:
+            resources = get_system_resources()
+            
+            cpu_val = 0
+            if resources.get("cpu_load") and resources["cpu_load"] != "N/A":
+                try:
+                    cpu_val = float(resources["cpu_load"].split(',')[0].strip())
+                except Exception:
+                    pass
+                
+            disk_val = 0
+            if resources.get("disk_usage") and resources["disk_usage"] != "N/A":
+                try:
+                    disk_val = float(resources["disk_usage"].split('(')[1].replace('%', '').replace(')', '').strip())
+                except Exception:
+                    pass
+
+            system_metrics_history.append({
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "cpu": cpu_val,
+                "disk": disk_val
+            })
+            await asyncio.sleep(10)
+    asyncio.create_task(collect_metrics())
 
 # Helper Functions
 def get_all_container_names():
@@ -303,3 +335,8 @@ async def get_dashboard_users():
 @app.get("/api/v1/system_resources")
 async def get_dashboard_system_resources():
     return get_system_resources()
+
+
+@app.get("/api/v1/system_resources/history")
+async def get_dashboard_system_resources_history():
+    return list(system_metrics_history)
