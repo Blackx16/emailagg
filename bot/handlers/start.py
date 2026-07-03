@@ -24,7 +24,7 @@ async def cmd_start(message: Message):
 
     # Register user in database via backend API
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers={"X-Internal-Key": os.getenv("INTERNAL_API_KEY", "")}) as client:
             resp = await client.post(
                 f"{BACKEND_INTERNAL_URL}/api/v1/users/register",
                 json={"telegram_id": telegram_id},

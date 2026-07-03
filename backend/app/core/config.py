@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     APP_ENV: str = "development"
     SECRET_KEY: str
+    INTERNAL_API_KEY: str
     BACKEND_URL: str = "http://localhost:8000"
     FRONTEND_URL: str = "http://localhost:3000"
 

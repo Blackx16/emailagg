@@ -5,7 +5,8 @@ import logging
 import uuid
 from datetime import datetime, timezone, timedelta
 from urllib.parse import parse_qsl
-from fastapi import Depends, HTTPException, status
+import time
+from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,6 +55,11 @@ def verify_telegram_init_data(init_data: str, bot_token: str) -> dict | None:
         params = dict(parse_qsl(init_data))
         if "hash" not in params:
             logger.warning("Missing hash in telegram init data.")
+            return None
+            
+        # Check freshness
+        if time.time() - int(params.get("auth_date", 0)) > 86400:
+            logger.warning("Telegram init data is older than 24 hours.")
             return None
         
         received_hash = params.pop("hash")
@@ -172,3 +178,13 @@ async def get_current_user_optional(
     except Exception:
         pass
     return None
+
+
+async def verify_internal(x_internal_key: str = Header(...)):
+    """Dependency to enforce internal API key verification."""
+    if not settings.INTERNAL_API_KEY:
+        logger.critical("INTERNAL_API_KEY is not set!")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal config error")
+        
+    if not hmac.compare_digest(x_internal_key, settings.INTERNAL_API_KEY):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid internal key")

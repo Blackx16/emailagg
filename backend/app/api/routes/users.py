@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.db.session import get_db
 from app.db.models import User
+from app.core.security import verify_internal
 
 router = APIRouter()
 
@@ -15,7 +16,7 @@ class UserRegisterSchema(BaseModel):
 
 
 @router.post("/register")
-async def register_user(payload: UserRegisterSchema, db: AsyncSession = Depends(get_db)):
+async def register_user(payload: UserRegisterSchema, db: AsyncSession = Depends(get_db), _internal: None = Depends(verify_internal)):
     """Register a new user via Telegram ID if they do not exist."""
     stmt = select(User).where(User.telegram_id == payload.telegram_id)
     result = await db.execute(stmt)
@@ -40,7 +41,7 @@ async def register_user(payload: UserRegisterSchema, db: AsyncSession = Depends(
 
 
 @router.get("/profile")
-async def get_user_profile(telegram_id: int, db: AsyncSession = Depends(get_db)):
+async def get_user_profile(telegram_id: int, db: AsyncSession = Depends(get_db), _internal: None = Depends(verify_internal)):
     """Return user profile info for the Telegram bot /settings command."""
     stmt = select(User).where(User.telegram_id == telegram_id)
     result = await db.execute(stmt)

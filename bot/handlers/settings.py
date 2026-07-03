@@ -32,7 +32,7 @@ async def cmd_settings(message: Message):
     # Fetch user profile
     user_data = None
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers={"X-Internal-Key": os.getenv("INTERNAL_API_KEY", "")}) as client:
             resp = await client.get(
                 f"{BACKEND_INTERNAL_URL}/api/v1/users/profile",
                 params={"telegram_id": telegram_id},

@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app.db.session import get_db
 from app.db.models import User, MailAccount, ForwardingRule
-from app.core.security import get_current_user
+from app.core.security import get_current_user, verify_internal
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -166,7 +166,8 @@ async def delete_rule(
 @router.get("/internal/by-telegram/{telegram_id}")
 async def get_rules_by_telegram_id(
     telegram_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _internal: None = Depends(verify_internal)
 ):
     """Internal endpoint for the Telegram bot to list rules by telegram_id.
     Only accessible from the internal Docker network."""

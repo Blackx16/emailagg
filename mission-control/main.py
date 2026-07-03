@@ -55,7 +55,7 @@ async def basic_auth_middleware(request: Request, call_next):
     # Allow access to login page and api/static assets without auth
     # We use request.scope["path"] so it remains agnostic of the root_path prefix
     path = request.scope.get("path", "")
-    if path in ["/login", "/static/"] or path.startswith("/api/"):
+    if path in ["/login", "/static/"]:
         return await call_next(request)
 
     auth = request.headers.get("Authorization")

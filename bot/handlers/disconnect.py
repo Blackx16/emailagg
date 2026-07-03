@@ -20,7 +20,7 @@ async def cmd_disconnect(message: Message):
     logger.info(f"Disconnect command triggered by user {telegram_id}")
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers={"X-Internal-Key": os.getenv("INTERNAL_API_KEY", "")}) as client:
             resp = await client.get(
                 f"{BACKEND_INTERNAL_URL}/api/v1/accounts/internal/by-telegram/{telegram_id}",
                 timeout=5.0,
@@ -101,7 +101,7 @@ async def cb_disconnect_account(callback: CallbackQuery):
     logger.info(f"Disconnect callback for account {account_id} by user {telegram_id}")
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers={"X-Internal-Key": os.getenv("INTERNAL_API_KEY", "")}) as client:
             resp = await client.post(
                 f"{BACKEND_INTERNAL_URL}/api/v1/accounts/{account_id}/disconnect",
                 params={"telegram_id": telegram_id},

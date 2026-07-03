@@ -23,7 +23,7 @@ async def cmd_rules(message: Message):
     logger.info(f"Rules command triggered by user {telegram_id}")
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers={"X-Internal-Key": os.getenv("INTERNAL_API_KEY", "")}) as client:
             resp = await client.get(
                 f"{BACKEND_INTERNAL_URL}/api/v1/rules/internal/by-telegram/{telegram_id}",
                 timeout=5.0,

@@ -5,7 +5,7 @@ import uuid
 
 from app.db.session import get_db
 from app.db.models import User, MailAccount
-from app.core.security import get_current_user
+from app.core.security import get_current_user, verify_internal
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -47,7 +47,8 @@ async def get_user_accounts(
 @router.get("/internal/by-telegram/{telegram_id}")
 async def get_accounts_by_telegram_id(
     telegram_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    _internal: None = Depends(verify_internal)
 ):
     """Internal endpoint for the Telegram bot to list accounts by telegram_id.
     Only accessible from the internal Docker network."""
@@ -117,6 +118,7 @@ async def disconnect_account_internal(
     account_id: str,
     telegram_id: int = Query(...),
     db: AsyncSession = Depends(get_db),
+    _internal: None = Depends(verify_internal)
 ):
     """Internal endpoint for the Telegram bot to disconnect a mail account via telegram_id."""
     import uuid as _uuid
