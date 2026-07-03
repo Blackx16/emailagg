@@ -16,7 +16,8 @@ cd "$BACKUP_DIR"
 sudo tar -czf "$ARCHIVE_NAME" var/lib/docker/containers/ || true
 
 # Upload using rclone
-sudo rclone copy "$ARCHIVE_NAME" gdrive:EmailAgg_Logs/
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+sudo rclone copy "$ARCHIVE_NAME" gdrive:EmailAgg_Logs/ --config "$SCRIPT_DIR/rclone.conf"
 
 # Cleanup
 cd /
