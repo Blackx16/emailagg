@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.db.session import get_db
 from app.db.models import User
 from app.core.security import verify_internal
+from app.core.telemetry import telemetry
 
 router = APIRouter()
 
@@ -27,6 +28,15 @@ async def register_user(payload: UserRegisterSchema, db: AsyncSession = Depends(
         db.add(user)
         await db.commit()
         await db.refresh(user)
+        
+        await telemetry.log_event(
+            db=db,
+            service="api",
+            event_type="User Signup",
+            user_id=user.id,
+            metadata_payload={"telegram_id": payload.telegram_id, "plan": user.plan}
+        )
+
         return {
             "status": "success",
             "message": "User registered successfully.",

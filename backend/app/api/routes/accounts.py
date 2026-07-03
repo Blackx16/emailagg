@@ -6,6 +6,7 @@ import uuid
 from app.db.session import get_db
 from app.db.models import User, MailAccount
 from app.core.security import get_current_user, verify_internal
+from app.core.telemetry import telemetry
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -153,5 +154,13 @@ async def disconnect_account_internal(
     account.refresh_token_encrypted = None
     account.token_expires_at = None
     await db.commit()
+
+    await telemetry.log_event(
+        db=db,
+        service="api",
+        event_type="Mailbox Disconnected",
+        user_id=user.id,
+        metadata_payload={"email": email}
+    )
 
     return {"status": "success", "message": "Account disconnected successfully.", "email": email}

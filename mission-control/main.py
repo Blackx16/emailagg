@@ -7,8 +7,14 @@ import docker
 import base64
 from datetime import datetime, timedelta, timezone
 import psycopg2
+from psycopg2.extras import RealDictCursor
 from collections import deque
 import asyncio
+import json
+import threading
+import uuid
+from fastapi import WebSocket, WebSocketDisconnect
+from celery import Celery
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s")
@@ -27,6 +33,8 @@ try:
 except Exception as e:
     logger.error(f"Failed to connect to Docker daemon: {e}. Ensure docker.sock is mounted.")
     docker_client = None
+
+celery_app = Celery("emailagg", broker=os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0"))
 
 
 class SimpleUser:
@@ -177,21 +185,21 @@ def get_db_stats():
             database=os.environ.get("POSTGRES_DB", "emailagg"),
             user=os.environ.get("POSTGRES_USER", "emailagg"),
             password=os.environ.get("POSTGRES_PASSWORD"),
-            connect_timeout=3
+            connect_timeout=3,
+            cursor_factory=RealDictCursor
         )
         cur = conn.cursor()
         
-        # Total users
-        cur.execute("SELECT COUNT(*) FROM users;")
-        total_users = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) as count FROM users;")
+        total_users = cur.fetchone()["count"]
         
         # Active mailboxes
-        cur.execute("SELECT COUNT(*) FROM mail_accounts WHERE status != 'disconnected';")
-        active_mailboxes = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) as count FROM mail_accounts WHERE status != 'disconnected';")
+        active_mailboxes = cur.fetchone()["count"]
         
         # Sent notifications in last 24h
-        cur.execute("SELECT COUNT(*) FROM notifications WHERE status = 'sent' AND sent_at >= NOW() - INTERVAL '24 hours';")
-        active_24h = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) as count FROM notifications WHERE status = 'sent' AND sent_at >= NOW() - INTERVAL '24 hours';")
+        active_24h = cur.fetchone()["count"]
         
         cur.close()
         return {
@@ -340,3 +348,238 @@ async def get_dashboard_system_resources():
 @app.get("/api/v1/system_resources/history")
 async def get_dashboard_system_resources_history():
     return list(system_metrics_history)
+
+
+@app.get("/api/v1/events")
+async def get_system_events(limit: int = 100, offset: int = 0, service: str = None, severity: str = None):
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            host=os.environ.get("POSTGRES_HOST", "db"),
+            database=os.environ.get("POSTGRES_DB", "emailagg"),
+            user=os.environ.get("POSTGRES_USER", "emailagg"),
+            password=os.environ.get("POSTGRES_PASSWORD"),
+            connect_timeout=3,
+            cursor_factory=RealDictCursor
+        )
+        cur = conn.cursor()
+        
+        query = "SELECT * FROM system_events WHERE 1=1"
+        params = []
+        if service:
+            query += " AND service = %s"
+            params.append(service)
+        if severity:
+            query += " AND severity = %s"
+            params.append(severity)
+            
+        query += " ORDER BY timestamp DESC LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
+        
+        cur.execute(query, tuple(params))
+        events = cur.fetchall()
+        
+        # Format datetime objects for JSON
+        for event in events:
+            if event.get("timestamp"):
+                event["timestamp"] = event["timestamp"].isoformat()
+            if event.get("id"):
+                event["id"] = str(event["id"])
+            if event.get("user_id"):
+                event["user_id"] = str(event["user_id"])
+                
+        return {"events": events}
+    except Exception as e:
+        logger.error(f"Failed to fetch events: {e}")
+        return {"events": [], "error": str(e)}
+    finally:
+        if conn:
+            conn.close()
+
+
+@app.get("/api/v1/celery/status")
+async def get_celery_status():
+    try:
+        i = celery_app.control.inspect()
+        active = i.active() or {}
+        registered = i.registered() or {}
+        scheduled = i.scheduled() or {}
+        reserved = i.reserved() or {}
+        stats = i.stats() or {}
+        
+        return {
+            "active": active,
+            "registered": registered,
+            "scheduled": scheduled,
+            "reserved": reserved,
+            "stats": stats
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/v1/db/tables")
+async def get_db_tables():
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            host=os.environ.get("POSTGRES_HOST", "db"),
+            database=os.environ.get("POSTGRES_DB", "emailagg"),
+            user=os.environ.get("POSTGRES_USER", "emailagg"),
+            password=os.environ.get("POSTGRES_PASSWORD"),
+            connect_timeout=3
+        )
+        cur = conn.cursor()
+        cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
+        tables = [row[0] for row in cur.fetchall()]
+        return {"tables": tables}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        if conn:
+            conn.close()
+
+
+from pydantic import BaseModel
+class QueryModel(BaseModel):
+    query: str
+
+@app.post("/api/v1/db/query")
+async def execute_db_query(payload: QueryModel):
+    # VERY dangerous, but requested by user ("Database browsing works", "Database Explorer").
+    # Restricted to SELECT only for safety.
+    if not payload.query.strip().lower().startswith("select"):
+        return {"error": "Only SELECT queries are allowed."}
+        
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            host=os.environ.get("POSTGRES_HOST", "db"),
+            database=os.environ.get("POSTGRES_DB", "emailagg"),
+            user=os.environ.get("POSTGRES_USER", "emailagg"),
+            password=os.environ.get("POSTGRES_PASSWORD"),
+            connect_timeout=3,
+            cursor_factory=RealDictCursor
+        )
+        # Read-only transaction
+        conn.set_session(readonly=True)
+        cur = conn.cursor()
+        cur.execute(payload.query)
+        rows = cur.fetchmany(100) # Limit to 100
+        
+        # Serialize UUIDs and DateTimes
+        for row in rows:
+            for k, v in row.items():
+                if hasattr(v, 'isoformat'):
+                    row[k] = v.isoformat()
+                elif isinstance(v, uuid.UUID):
+                    row[k] = str(v)
+                    
+        return {"columns": [desc[0] for desc in cur.description], "rows": rows}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        if conn:
+            conn.close()
+
+
+@app.websocket("/ws/terminal/{container_name}")
+async def websocket_terminal(websocket: WebSocket, container_name: str, auth: str = None):
+    # Authenticate via query param
+    if not auth:
+        await websocket.close(code=1008, reason="Missing auth")
+        return
+        
+    try:
+        decoded = base64.b64decode(auth).decode("ascii")
+        username, password = decoded.split(":", 1)
+        if username != ADMIN_USERNAME or password != ADMIN_PASSWORD:
+            await websocket.close(code=1008, reason="Invalid credentials")
+            return
+    except Exception:
+        await websocket.close(code=1008, reason="Invalid auth format")
+        return
+
+    await websocket.accept()
+
+    if not docker_client:
+        await websocket.send_text("Docker client not initialized.\r\n")
+        await websocket.close()
+        return
+
+    try:
+        container = docker_client.containers.get(container_name)
+    except Exception as e:
+        await websocket.send_text(f"Container not found: {e}\r\n")
+        await websocket.close()
+        return
+
+    # Create exec instance
+    try:
+        exec_instance = docker_client.api.exec_create(
+            container.id,
+            cmd="/bin/bash",
+            stdin=True,
+            tty=True,
+            stdout=True,
+            stderr=True
+        )
+        sock = docker_client.api.exec_start(
+            exec_instance["Id"],
+            socket=True,
+            tty=True
+        )
+    except Exception as e:
+        # Fallback to /bin/sh if bash is missing
+        try:
+            exec_instance = docker_client.api.exec_create(
+                container.id,
+                cmd="/bin/sh",
+                stdin=True,
+                tty=True,
+                stdout=True,
+                stderr=True
+            )
+            sock = docker_client.api.exec_start(
+                exec_instance["Id"],
+                socket=True,
+                tty=True
+            )
+        except Exception as fallback_e:
+            await websocket.send_text(f"Failed to start terminal: {fallback_e}\r\n")
+            await websocket.close()
+            return
+
+    sock_fd = sock.fileno()
+    sock.setblocking(False)
+
+    async def read_from_pty():
+        try:
+            while True:
+                # Read from socket non-blocking using asyncio
+                loop = asyncio.get_event_loop()
+                data = await loop.run_in_executor(None, sock.read, 4096)
+                if not data:
+                    break
+                await websocket.send_bytes(data)
+        except Exception:
+            pass
+        finally:
+            await websocket.close()
+
+    async def write_to_pty():
+        try:
+            while True:
+                data = await websocket.receive_text()
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(None, sock.write, data.encode('utf-8'))
+        except WebSocketDisconnect:
+            pass
+        except Exception:
+            pass
+
+    task_read = asyncio.create_task(read_from_pty())
+    task_write = asyncio.create_task(write_to_pty())
+    
+    await asyncio.gather(task_read, task_write, return_exceptions=True)
+    sock.close()

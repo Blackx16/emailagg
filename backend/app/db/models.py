@@ -6,7 +6,7 @@ from sqlalchemy import (
     Integer, String, Text, func, BigInteger, UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -147,3 +147,21 @@ class ForwardingRule(Base):
 
     user: Mapped["User"] = relationship(back_populates="forwarding_rules")
     mail_account: Mapped["MailAccount"] = relationship(back_populates="forwarding_rules")
+
+
+# ─── System Events ────────────────────────────────────────────
+class SystemEvent(Base):
+    __tablename__ = "system_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    service: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    severity: Mapped[str] = mapped_column(String(20), default="info", nullable=False, index=True)
+    
+    user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    worker: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    metadata_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    user: Mapped["User"] = relationship(foreign_keys=[user_id])

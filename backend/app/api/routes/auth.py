@@ -13,6 +13,7 @@ from app.core.redis import get_redis
 from app.services import microsoft_auth, google_auth
 from app.workers.sync_tasks import sync_account
 from app.workers.notification_tasks import send_telegram_message
+from app.core.telemetry import telemetry
 
 router = APIRouter()
 
@@ -150,6 +151,14 @@ async def connect_imap(
         await db.commit()
         account_id = existing_account.id
 
+    await telemetry.log_event(
+        db=db,
+        service="api",
+        event_type="Mailbox Connected",
+        user_id=current_user.id,
+        metadata_payload={"provider": "imap", "email": payload.email}
+    )
+
     # 3. Trigger async initial sync
     sync_account.delay(str(account_id))
 
@@ -256,6 +265,14 @@ async def register_oauth_account(
         existing_account.forward_enabled = True
         await db.commit()
         account_id = existing_account.id
+
+    await telemetry.log_event(
+        db=db,
+        service="api",
+        event_type="Mailbox Connected",
+        user_id=user.id,
+        metadata_payload={"provider": provider, "email": email}
+    )
 
     # Trigger async initial sync
     sync_account.delay(str(account_id))

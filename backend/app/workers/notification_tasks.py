@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.db.session import AsyncSessionLocal
 from app.db.models import Notification, Email, MailAccount, User
 from app.workers.sync_tasks import async_to_sync
+from app.core.telemetry import telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +177,9 @@ async def send_telegram_notification(self, user_telegram_id: int, email_data: di
 
         try:
             # 5. Send
+            start_time = time.time()
             await send_telegram_message(user_telegram_id, text, reply_markup)
+            duration_ms = int((time.time() - start_time) * 1000)
 
             # 6. Mark success
             db_notification.status = "sent"
@@ -195,6 +198,16 @@ async def send_telegram_notification(self, user_telegram_id: int, email_data: di
                 email_id,
             )
 
+            await telemetry.log_event(
+                db=db,
+                service="worker_notifications",
+                event_type="Telegram Notification Sent",
+                user_id=user_db_id,
+                worker=self.request.hostname,
+                duration_ms=duration_ms,
+                metadata_payload={"email_id": str(email_id), "domain": from_domain}
+            )
+
         except Exception as exc:
             logger.error(
                 "Telegram send failed for user %s: %s", user_db_id, type(exc).__name__
@@ -202,4 +215,15 @@ async def send_telegram_notification(self, user_telegram_id: int, email_data: di
             db_notification.status = "failed"
             db_notification.error_message = str(exc)[:500]
             await db.commit()
+            
+            await telemetry.log_event(
+                db=db,
+                service="worker_notifications",
+                event_type="Telegram Notification Failed",
+                severity="error",
+                user_id=user_db_id,
+                worker=self.request.hostname,
+                metadata_payload={"email_id": str(email_id), "error": str(exc)[:500]}
+            )
+            
             raise self.retry(exc=exc)

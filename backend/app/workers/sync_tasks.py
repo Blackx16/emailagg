@@ -2,6 +2,7 @@ import math
 import random
 import logging
 import asyncio
+import time
 from functools import wraps
 from celery import shared_task
 from sqlalchemy import select
@@ -10,6 +11,7 @@ import redis as redis_lib
 from app.db.session import AsyncSessionLocal
 from app.db.models import MailAccount
 from app.core.config import settings
+from app.core.telemetry import telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +117,7 @@ async def sync_account(self, account_id: str):
             await db.commit()
 
             try:
+                start_time = time.time()
                 if account.provider == "microsoft":
                     from app.services.microsoft_sync import MicrosoftSyncService
                     service = MicrosoftSyncService(account, db)
@@ -130,7 +133,30 @@ async def sync_account(self, account_id: str):
                 else:
                     raise ValueError(f"Unknown provider: {account.provider}")
 
+                duration_ms = int((time.time() - start_time) * 1000)
+                await telemetry.log_event(
+                    db=db,
+                    service="worker_sync",
+                    event_type="Sync Completed",
+                    user_id=account.user_id,
+                    worker=self.request.hostname,
+                    duration_ms=duration_ms,
+                    metadata_payload={"account_id": account_id, "provider": account.provider}
+                )
+
             except Exception as exc:
+                duration_ms = int((time.time() - start_time) * 1000)
+                await telemetry.log_event(
+                    db=db,
+                    service="worker_sync",
+                    event_type="Sync Failed",
+                    severity="error",
+                    user_id=account.user_id,
+                    worker=self.request.hostname,
+                    duration_ms=duration_ms,
+                    metadata_payload={"account_id": account_id, "error": str(exc)[:500]}
+                )
+                
                 logger.error("sync_account failed for %s: %s", account_id, type(exc).__name__)
                 await db.rollback()
                 account.status = "error"

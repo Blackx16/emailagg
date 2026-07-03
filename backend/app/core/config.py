@@ -4,6 +4,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    # Telemetry
+    POSTHOG_API_KEY: str | None = None
+    SENTRY_DSN: str | None = None
+
     APP_ENV: str = "development"
     SECRET_KEY: str
     INTERNAL_API_KEY: str
