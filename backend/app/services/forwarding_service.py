@@ -179,58 +179,48 @@ def extract_gmail_body(msg_detail: dict) -> tuple[str | None, str | None]:
     return html_body, text_body
 
 
-async def _send_forward(
-    email: Email,
-    account: MailAccount,
-    to_email: str,
-    db: AsyncSession,
-    original_html: str | None = None,
-    original_text: str | None = None,
-):
-    """Deliver forwarded email using Google/Microsoft APIs for OAuth accounts or SMTP fallback."""
-    # Check for OTP to display in forwarding subject/body
-    otp = extract_otp(email.subject, email.snippet)
-    otp_tag = f" [OTP: {otp}]" if otp else ""
-    subject = f"Fwd: {email.subject or '(No Subject)'}{otp_tag}"
+async def _fetch_on_demand_body(account: MailAccount, email: Email, db: AsyncSession) -> tuple[str | None, str | None]:
+    html_body = None
+    text_body = None
+    if account.provider == "google":
+        try:
+            access_token = await get_valid_access_token(account, db)
+            url = f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{email.message_id}?format=full"
+            transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+            async with httpx.AsyncClient(transport=transport, timeout=10.0) as client:
+                resp = await client.get(url, headers={"Authorization": f"Bearer {access_token}"})
+                if resp.status_code == 200:
+                    gmail_detail = resp.json()
+                    html_body, text_body = extract_gmail_body(gmail_detail)
+                else:
+                    logger.error(f"Failed to fetch full Gmail message for on-demand forwarding: {resp.status_code}")
+        except Exception as e:
+            logger.error(f"Error fetching Gmail details on-demand: {e}", exc_info=True)
 
-    html_body = original_html
-    text_body = original_text
-
-    # On-demand fetching for OAuth accounts if not already provided (e.g. from IMAP sync)
-    if not html_body and not text_body:
-        if account.provider == "google":
-            try:
-                access_token = await get_valid_access_token(account, db)
-                url = f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{email.message_id}?format=full"
-                transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
-                async with httpx.AsyncClient(transport=transport, timeout=10.0) as client:
-                    resp = await client.get(url, headers={"Authorization": f"Bearer {access_token}"})
-                    if resp.status_code == 200:
-                        gmail_detail = resp.json()
-                        html_body, text_body = extract_gmail_body(gmail_detail)
+    elif account.provider == "microsoft":
+        try:
+            access_token = await get_valid_access_token(account, db)
+            url = f"https://graph.microsoft.com/v1.0/me/messages/{email.message_id}?$select=body"
+            transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+            async with httpx.AsyncClient(transport=transport, timeout=10.0) as client:
+                resp = await client.get(url, headers={"Authorization": f"Bearer {access_token}"})
+                if resp.status_code == 200:
+                    body_info = resp.json().get("body", {})
+                    if body_info.get("contentType") == "html":
+                        html_body = body_info.get("content")
                     else:
-                        logger.error(f"Failed to fetch full Gmail message for on-demand forwarding: {resp.status_code}")
-            except Exception as e:
-                logger.error(f"Error fetching Gmail details on-demand: {e}", exc_info=True)
+                        text_body = body_info.get("content")
+                else:
+                    logger.error(f"Failed to fetch full Microsoft message for on-demand forwarding: {resp.status_code}")
+        except Exception as e:
+            logger.error(f"Error fetching Microsoft details on-demand: {e}", exc_info=True)
 
-        elif account.provider == "microsoft":
-            try:
-                access_token = await get_valid_access_token(account, db)
-                url = f"https://graph.microsoft.com/v1.0/me/messages/{email.message_id}?$select=body"
-                transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
-                async with httpx.AsyncClient(transport=transport, timeout=10.0) as client:
-                    resp = await client.get(url, headers={"Authorization": f"Bearer {access_token}"})
-                    if resp.status_code == 200:
-                        body_info = resp.json().get("body", {})
-                        if body_info.get("contentType") == "html":
-                            html_body = body_info.get("content")
-                        else:
-                            text_body = body_info.get("content")
-                    else:
-                        logger.error(f"Failed to fetch full Microsoft message for on-demand forwarding: {resp.status_code}")
-            except Exception as e:
-                logger.error(f"Error fetching Microsoft details on-demand: {e}", exc_info=True)
+    return html_body, text_body
 
+
+def _build_forwarding_content(
+    email: Email, account: MailAccount, otp: str | None, html_body: str | None, text_body: str | None
+) -> tuple[str, str | None]:
     # 1. Build Text version of forwarding headers and body
     text_header = (
         f"---------- Forwarded from {account.email} via EmailAgg ----------\n"
@@ -259,100 +249,139 @@ async def _send_forward(
         html_header += "</div><br>"
         html_content = html_header + html_body
 
-    if account.provider == "google":
-        logger.info(f"Forwarding via Gmail API from {account.email}")
-        access_token = await get_valid_access_token(account, db)
-        
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = account.email
-        msg["To"] = to_email
-        msg["X-Forwarded-By"] = "EmailAgg"
-        
-        # Always attach text first, then HTML
-        msg.attach(MIMEText(text_content, "plain"))
-        if html_content:
-            msg.attach(MIMEText(html_content, "html"))
+    return text_content, html_content
 
-        raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode()
-        url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
-        transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
-        async with httpx.AsyncClient(transport=transport, timeout=10.0) as client:
-            resp = await client.post(
-                url,
-                headers={
-                    "Authorization": f"Bearer {access_token}",
-                    "Content-Type": "application/json",
-                },
-                json={"raw": raw_message},
-            )
-            if resp.status_code != 200:
-                raise ValueError(f"Gmail API forwarding failed: HTTP {resp.status_code} - {resp.text}")
-        logger.info(f"Successfully forwarded email via Gmail API to {to_email}")
 
-    elif account.provider == "microsoft":
-        logger.info(f"Forwarding via Microsoft Graph API from {account.email}")
-        access_token = await get_valid_access_token(account, db)
+async def _send_via_gmail_api(
+    account: MailAccount, subject: str, to_email: str, text_content: str, html_content: str | None, db: AsyncSession
+):
+    logger.info(f"Forwarding via Gmail API from {account.email}")
+    access_token = await get_valid_access_token(account, db)
 
-        payload = {
-            "message": {
-                "subject": subject,
-                "body": {
-                    "contentType": "HTML" if html_content else "Text",
-                    "content": html_content if html_content else text_content
-                },
-                "toRecipients": [
-                    {
-                        "emailAddress": {
-                            "address": to_email
-                        }
-                    }
-                ]
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = account.email
+    msg["To"] = to_email
+    msg["X-Forwarded-By"] = "EmailAgg"
+
+    # Always attach text first, then HTML
+    msg.attach(MIMEText(text_content, "plain"))
+    if html_content:
+        msg.attach(MIMEText(html_content, "html"))
+
+    raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+    url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+    transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+    async with httpx.AsyncClient(transport=transport, timeout=10.0) as client:
+        resp = await client.post(
+            url,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
             },
-            "saveToSentItems": False
-        }
-        url = "https://graph.microsoft.com/v1.0/me/sendMail"
-        transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
-        async with httpx.AsyncClient(transport=transport, timeout=10.0) as client:
-            resp = await client.post(
-                url,
-                headers={
-                    "Authorization": f"Bearer {access_token}",
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-            )
-            if resp.status_code != 202:
-                raise ValueError(f"Microsoft Graph API forwarding failed: HTTP {resp.status_code} - {resp.text}")
-        logger.info(f"Successfully forwarded email via Microsoft Graph API to {to_email}")
-
-    else:
-        # Fallback to SMTP for custom IMAP mailboxes
-        if not settings.SMTP_HOST or not settings.SMTP_USER:
-            raise ValueError("SMTP_HOST or SMTP_USER is not configured in environment settings. Cannot send SMTP forward.")
-
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = settings.SMTP_FROM_ADDRESS or settings.SMTP_USER
-        msg["To"] = to_email
-        msg["X-Forwarded-By"] = "EmailAgg"
-        
-        msg.attach(MIMEText(text_content, "plain"))
-        if html_content:
-            msg.attach(MIMEText(html_content, "html"))
-
-        use_tls = (settings.SMTP_PORT == 465)
-        start_tls = (settings.SMTP_PORT == 587)
-
-        logger.debug(f"Sending SMTP email via {settings.SMTP_HOST}:{settings.SMTP_PORT} (TLS={use_tls}, StartTLS={start_tls})")
-        await aiosmtplib.send(
-            msg,
-            hostname=settings.SMTP_HOST,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USER,
-            password=settings.SMTP_PASSWORD,
-            use_tls=use_tls,
-            start_tls=start_tls,
-            timeout=10.0,
+            json={"raw": raw_message},
         )
-        logger.info(f"Successfully forwarded email via SMTP to {to_email}")
+        if resp.status_code != 200:
+            raise ValueError(f"Gmail API forwarding failed: HTTP {resp.status_code} - {resp.text}")
+    logger.info(f"Successfully forwarded email via Gmail API to {to_email}")
+
+
+async def _send_via_microsoft_api(
+    account: MailAccount, subject: str, to_email: str, text_content: str, html_content: str | None, db: AsyncSession
+):
+    logger.info(f"Forwarding via Microsoft Graph API from {account.email}")
+    access_token = await get_valid_access_token(account, db)
+
+    payload = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": "HTML" if html_content else "Text",
+                "content": html_content if html_content else text_content
+            },
+            "toRecipients": [
+                {
+                    "emailAddress": {
+                        "address": to_email
+                    }
+                }
+            ]
+        },
+        "saveToSentItems": False
+    }
+    url = "https://graph.microsoft.com/v1.0/me/sendMail"
+    transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+    async with httpx.AsyncClient(transport=transport, timeout=10.0) as client:
+        resp = await client.post(
+            url,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        )
+        if resp.status_code != 202:
+            raise ValueError(f"Microsoft Graph API forwarding failed: HTTP {resp.status_code} - {resp.text}")
+    logger.info(f"Successfully forwarded email via Microsoft Graph API to {to_email}")
+
+
+async def _send_via_smtp(subject: str, to_email: str, text_content: str, html_content: str | None):
+    if not settings.SMTP_HOST or not settings.SMTP_USER:
+        raise ValueError("SMTP_HOST or SMTP_USER is not configured in environment settings. Cannot send SMTP forward.")
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = settings.SMTP_FROM_ADDRESS or settings.SMTP_USER
+    msg["To"] = to_email
+    msg["X-Forwarded-By"] = "EmailAgg"
+
+    msg.attach(MIMEText(text_content, "plain"))
+    if html_content:
+        msg.attach(MIMEText(html_content, "html"))
+
+    use_tls = (settings.SMTP_PORT == 465)
+    start_tls = (settings.SMTP_PORT == 587)
+
+    logger.debug(f"Sending SMTP email via {settings.SMTP_HOST}:{settings.SMTP_PORT} (TLS={use_tls}, StartTLS={start_tls})")
+    await aiosmtplib.send(
+        msg,
+        hostname=settings.SMTP_HOST,
+        port=settings.SMTP_PORT,
+        username=settings.SMTP_USER,
+        password=settings.SMTP_PASSWORD,
+        use_tls=use_tls,
+        start_tls=start_tls,
+        timeout=10.0,
+    )
+    logger.info(f"Successfully forwarded email via SMTP to {to_email}")
+
+
+async def _send_forward(
+    email: Email,
+    account: MailAccount,
+    to_email: str,
+    db: AsyncSession,
+    original_html: str | None = None,
+    original_text: str | None = None,
+):
+    """Deliver forwarded email using Google/Microsoft APIs for OAuth accounts or SMTP fallback."""
+    # Check for OTP to display in forwarding subject/body
+    otp = extract_otp(email.subject, email.snippet)
+    otp_tag = f" [OTP: {otp}]" if otp else ""
+    subject = f"Fwd: {email.subject or '(No Subject)'}{otp_tag}"
+
+    html_body = original_html
+    text_body = original_text
+
+    # On-demand fetching for OAuth accounts if not already provided (e.g. from IMAP sync)
+    if not html_body and not text_body:
+        html_body, text_body = await _fetch_on_demand_body(account, email, db)
+
+    text_content, html_content = _build_forwarding_content(email, account, otp, html_body, text_body)
+
+    if account.provider == "google":
+        await _send_via_gmail_api(account, subject, to_email, text_content, html_content, db)
+    elif account.provider == "microsoft":
+        await _send_via_microsoft_api(account, subject, to_email, text_content, html_content, db)
+    else:
+        await _send_via_smtp(subject, to_email, text_content, html_content)
