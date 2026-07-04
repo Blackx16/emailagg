@@ -95,16 +95,10 @@ async def check_and_forward(
                 except Exception as redis_err:
                     logger.error(f"Redis rate limiting check failed: {redis_err}. Proceeding with caution...")
 
-                # Send forward email via SMTP/API
-                logger.info(f"Forwarding email {email.id} to {rule.forward_to_email} via rule {rule.id}")
-                await _send_forward(
-                    email,
-                    account,
-                    rule.forward_to_email,
-                    db,
-                    original_html=original_html,
-                    original_text=original_text,
-                )
+                # Enqueue forward email task
+                from app.workers.forwarding_tasks import forward_email_task
+                logger.info(f"Enqueueing forward task for email {email.id} to {rule.forward_to_email} via rule {rule.id}")
+                forward_email_task.delay(str(email.id), str(rule.id))
                 forwarded_any = True
 
         return forwarded_any

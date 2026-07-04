@@ -24,7 +24,6 @@ async def forward_email_task(self, email_id: str, rule_id: str):
     Runs on the isolated 'forwarding' queue so SMTP failures never block
     sync or notification pipelines.
     """
-    from app.services.forwarding_service import ForwardingService
 
     async with AsyncSessionLocal() as db:
         # Load email
@@ -50,9 +49,17 @@ async def forward_email_task(self, email_id: str, rule_id: str):
             )
             return
 
+        # Load account
+        account_stmt = select(MailAccount).where(MailAccount.id == email.mail_account_id)
+        account_res = await db.execute(account_stmt)
+        account = account_res.scalar_one_or_none()
+        if not account:
+            logger.warning("forward_email_task: account for email %s not found — skipping.", email_id)
+            return
+
         try:
-            service = ForwardingService(db)
-            await service.deliver(email, rule)
+            from app.services.forwarding_service import _send_forward
+            await _send_forward(email, account, rule.forward_to_email, db)
             logger.info(
                 "Forwarded email [%s] via rule [%s] → %s",
                 email_id,
