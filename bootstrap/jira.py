@@ -400,6 +400,7 @@ class JiraBootstrapper:
                 continue
 
             try:
+                # First try with Epic Name custom field (required for company-managed projects)
                 result = self._client.create_issue(
                     summary=spec.name,
                     issue_type="Epic",
@@ -408,15 +409,36 @@ class JiraBootstrapper:
                     priority=spec.priority,
                     custom_fields={"customfield_10011": spec.name},  # Epic Name field
                 )
-                key = result.get("key", f"{self._cfg.jira_project_key}-DRY")
-                self._summary.record(PageRecord(
-                    resource_type="jira_epic",
-                    title=spec.name,
-                    status="created",
-                    url=f"{self._cfg.atlassian_base_url}/browse/{key}",
-                ))
-                created[spec.name] = key
-                logger.info("✅ Created Epic: '%s' → %s", spec.name, key)
+            except RuntimeError as exc:
+                if "customfield_10011" in str(exc):
+                    logger.warning("Epic Name custom field is not supported in this project. Retrying without it...")
+                    # Retry without the Epic Name custom field (standard for team-managed projects)
+                    try:
+                        result = self._client.create_issue(
+                            summary=spec.name,
+                            issue_type="Epic",
+                            description=spec.description,
+                            labels=spec.labels,
+                            priority=spec.priority,
+                        )
+                    except Exception as inner_exc:
+                        logger.error("❌ Failed to create Epic '%s': %s", spec.name, inner_exc)
+                        self._summary.record(PageRecord(
+                            resource_type="jira_epic",
+                            title=spec.name,
+                            status="failed",
+                            error=str(inner_exc),
+                        ))
+                        continue
+                else:
+                    logger.error("❌ Failed to create Epic '%s': %s", spec.name, exc)
+                    self._summary.record(PageRecord(
+                        resource_type="jira_epic",
+                        title=spec.name,
+                        status="failed",
+                        error=str(exc),
+                    ))
+                    continue
             except Exception as exc:
                 logger.error("❌ Failed to create Epic '%s': %s", spec.name, exc)
                 self._summary.record(PageRecord(
@@ -425,6 +447,17 @@ class JiraBootstrapper:
                     status="failed",
                     error=str(exc),
                 ))
+                continue
+
+            key = result.get("key", f"{self._cfg.jira_project_key}-DRY")
+            self._summary.record(PageRecord(
+                resource_type="jira_epic",
+                title=spec.name,
+                status="created",
+                url=f"{self._cfg.atlassian_base_url}/browse/{key}",
+            ))
+            created[spec.name] = key
+            logger.info("✅ Created Epic: '%s' → %s", spec.name, key)
 
         return created
 

@@ -139,6 +139,23 @@ class TestJiraBootstrapper:
         assert "Broken Epic" not in result
         assert summary.failed[0].title == "Broken Epic"
 
+    def test_handles_epic_name_field_missing_fallback(self, cfg, summary):
+        client = MagicMock(spec=JiraClient)
+        client.find_issue_by_summary.return_value = None
+        client.create_issue.side_effect = [
+            RuntimeError("customfield_10011 is not on the appropriate screen"),
+            {"key": "TEST-42"}
+        ]
+
+        bootstrapper = JiraBootstrapper(cfg, summary, client=client)
+        result = bootstrapper.bootstrap_epics([
+            EpicSpec(name="Fallback Epic", description="Fallback test")
+        ])
+
+        assert result["Fallback Epic"] == "TEST-42"
+        assert client.create_issue.call_count == 2
+        assert summary.created[0].title == "Fallback Epic"
+
     def test_ensure_project_skips_when_exists(self, cfg, summary):
         cfg.dry_run = False
         client = MagicMock(spec=JiraClient)
