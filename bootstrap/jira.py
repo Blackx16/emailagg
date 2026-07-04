@@ -324,6 +324,59 @@ class JiraBootstrapper:
         self._summary = summary
         self._client = client or JiraClient(cfg)
 
+    def ensure_project(self) -> None:
+        """
+        Verify that the target Jira project exists.
+        If it doesn't exist, attempt to create it automatically using the lead assignee account ID.
+        """
+        if self._cfg.dry_run:
+            logger.info("[DRY-RUN] Checking Jira project key: %s", self._cfg.jira_project_key)
+            return
+
+        try:
+            self._client._get(f"{self._client._base}/project/{self._client._project}")
+            logger.info("✅ Jira project '%s' already exists.", self._client._project)
+            self._summary.record(PageRecord(
+                resource_type="jira_project",
+                title=self._client._project,
+                status="skipped",
+                url=f"{self._cfg.atlassian_base_url}/browse/{self._client._project}",
+            ))
+        except Exception:
+            logger.info("Jira project '%s' not found. Attempting auto-creation...", self._client._project)
+            lead_id = self._cfg.jira_default_assignee
+            if not lead_id:
+                raise ValueError(
+                    "Jira project lead account ID (jira_default_assignee) is not set in config. "
+                    "Cannot auto-create the project."
+                )
+
+            payload = {
+                "key": self._client._project,
+                "name": "EmailAgg",
+                "projectTypeKey": "software",
+                "projectTemplateKey": "com.pyxis.greenhopper.jira:gh-simplified-agility-kanban",
+                "leadAccountId": lead_id,
+            }
+            try:
+                self._client._post(f"{self._client._base}/project", payload)
+                logger.info("✅ Jira project '%s' successfully created.", self._client._project)
+                self._summary.record(PageRecord(
+                    resource_type="jira_project",
+                    title=self._client._project,
+                    status="created",
+                    url=f"{self._cfg.atlassian_base_url}/browse/{self._client._project}",
+                ))
+            except Exception as exc:
+                logger.error("❌ Failed to create Jira project '%s': %s", self._client._project, exc)
+                self._summary.record(PageRecord(
+                    resource_type="jira_project",
+                    title=self._client._project,
+                    status="failed",
+                    error=str(exc),
+                ))
+                raise
+
     def bootstrap_epics(self, epic_specs: list[EpicSpec]) -> dict[str, str]:
         """
         Create Epics from a list of EpicSpec objects.

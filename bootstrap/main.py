@@ -206,6 +206,9 @@ def _run_jira(cfg, summary: ExecutionSummary, progress, task) -> None:
     """Bootstrap Jira epics, components, and versions."""
     bootstrapper = JiraBootstrapper(cfg, summary)
 
+    progress.update(task, description="[magenta]Ensuring Jira project exists…")
+    bootstrapper.ensure_project()
+
     progress.update(task, description="[magenta]Creating Jira Epics…")
     bootstrapper.bootstrap_epics(EMAILAGG_EPICS)
 

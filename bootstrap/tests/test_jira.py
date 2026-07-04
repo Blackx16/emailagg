@@ -139,6 +139,51 @@ class TestJiraBootstrapper:
         assert "Broken Epic" not in result
         assert summary.failed[0].title == "Broken Epic"
 
+    def test_ensure_project_skips_when_exists(self, cfg, summary):
+        cfg.dry_run = False
+        client = MagicMock(spec=JiraClient)
+        # Mock _base and _project attributes on the mock client
+        client._base = "https://test.atlassian.net"
+        client._project = "TEST"
+        client._get.return_value = {"id": "12345", "key": "TEST"}
+
+        bootstrapper = JiraBootstrapper(cfg, summary, client=client)
+        bootstrapper.ensure_project()
+
+        client._get.assert_called_once_with("https://test.atlassian.net/project/TEST")
+        client._post.assert_not_called()
+        assert summary.skipped[0].title == "TEST"
+
+    def test_ensure_project_creates_when_missing(self, cfg, summary):
+        cfg.dry_run = False
+        client = MagicMock(spec=JiraClient)
+        client._base = "https://test.atlassian.net"
+        client._project = "TEST"
+        client._get.side_effect = RuntimeError("Not found")
+        client._post.return_value = {"id": "12345", "key": "TEST"}
+
+        bootstrapper = JiraBootstrapper(cfg, summary, client=client)
+        bootstrapper.ensure_project()
+
+        client._get.assert_called_once_with("https://test.atlassian.net/project/TEST")
+        client._post.assert_called_once()
+        assert summary.created[0].title == "TEST"
+
+    def test_ensure_project_fails(self, cfg, summary):
+        cfg.dry_run = False
+        client = MagicMock(spec=JiraClient)
+        client._base = "https://test.atlassian.net"
+        client._project = "TEST"
+        client._get.side_effect = RuntimeError("Not found")
+        client._post.side_effect = RuntimeError("Create failed")
+
+        bootstrapper = JiraBootstrapper(cfg, summary, client=client)
+        with pytest.raises(RuntimeError):
+            bootstrapper.ensure_project()
+
+        assert summary.failed[0].title == "TEST"
+
+
 
 class TestAdfDoc:
     """Tests for the ADF formatter."""
