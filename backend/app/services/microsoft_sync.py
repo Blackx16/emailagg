@@ -57,18 +57,23 @@ class MicrosoftSyncService:
             telegram_id = user_result.scalar_one()
 
             new_emails_count = 0
+
+            # Fetch all existing message IDs for the current batch of messages in one query
+            fetched_msg_ids = [msg["id"] for msg in messages]
+            existing_msg_ids = set()
+            if fetched_msg_ids:
+                stmt_existing = select(Email.message_id).where(
+                    Email.mail_account_id == self.account.id,
+                    Email.message_id.in_(fetched_msg_ids)
+                )
+                existing_result = await self.db.execute(stmt_existing)
+                existing_msg_ids = set(existing_result.scalars().all())
+
             # Sync oldest emails first to maintain chronological notification order
             for msg in reversed(messages):
                 msg_id = msg["id"]
 
-                # Deduplicate by checking if message_id is already stored for this account
-                stmt_email = select(Email).where(
-                    Email.mail_account_id == self.account.id, Email.message_id == msg_id
-                )
-                email_result = await self.db.execute(stmt_email)
-                existing_email = email_result.scalar_one_or_none()
-
-                if existing_email:
+                if msg_id in existing_msg_ids:
                     continue
 
                 from_data = msg.get("from", {}).get("emailAddress", {})
