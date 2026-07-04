@@ -64,15 +64,6 @@ def verify_telegram_init_data(init_data: str, bot_token: str) -> dict | None:
         
         received_hash = params.pop("hash")
         
-        # SECURITY: Never allow dummy hash bypass in production
-        if received_hash == "dummy":
-            if settings.APP_ENV == "production":
-                logger.critical("SECURITY: Dummy hash auth attempt blocked in production!")
-                return None
-            if settings.APP_ENV == "development":
-                logger.info("Bypassing Telegram signature check for local development dev login.")
-                return params
-        
         # 2. Sort key-value pairs alphabetically and build data_check_string
         sorted_params = sorted(params.items())
         data_check_string = "\n".join(f"{k}={v}" for k, v in sorted_params)
