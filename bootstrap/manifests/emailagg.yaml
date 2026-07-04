@@ -1,0 +1,435 @@
+# emailagg.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# EmailAgg Project Manifest
+#
+# Defines the complete Confluence page hierarchy, Jira Epics, Components,
+# Versions, and Labels for the EmailAgg product.
+#
+# This manifest is loaded by the Engineering OS bootstrapper and used
+# to idempotently initialise the EmailAgg workspace.
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: "1.0"
+kind: Project
+
+metadata:
+  name: EmailAgg
+  tagline: "Unified Email Aggregation & Forwarding via Telegram"
+  description: >
+    EmailAgg is a self-hosted, enterprise-grade Email Aggregation SaaS that
+    compiles emails from multiple inboxes (Gmail, Microsoft Outlook, and custom
+    IMAP accounts) and delivers instant notifications to a Telegram bot.
+    Features direct API email forwarding, smart OTP extraction, and granular
+    routing rule scoping.
+  owner: "Chandraveer S Solanki"
+  github: "https://github.com/Blackx16/emailagg"
+  landing_page: "https://Blackx16.github.io/emailagg/"
+  status: "Private Beta"
+  tech_stack:
+    backend: "FastAPI + SQLAlchemy + Alembic"
+    workers: "Celery + Redis"
+    database: "PostgreSQL"
+    frontend: "Next.js"
+    bot: "aiogram (Telegram)"
+    infra: "Docker Compose + Nginx + Hetzner VPS"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Jira Bootstrap
+# ─────────────────────────────────────────────────────────────────────────────
+jira:
+  project_key: "LAZYA"
+  project_name: "EmailAgg"
+  assignee_account_id: "712020:f3a98c94-f7ec-4341-b191-fb670a7b0ee5"
+
+  labels:
+    - backend
+    - frontend
+    - infra
+    - security
+    - worker
+    - api
+    - bug
+    - feature
+    - documentation
+    - tech-debt
+    - beta
+    - release
+
+  epics:
+    - name: Product
+      description: >
+        Product vision, roadmap, release planning, business metrics,
+        and go-to-market strategy for EmailAgg.
+      labels: [product, beta]
+      priority: High
+
+    - name: Authentication
+      description: >
+        OAuth2 flows for Gmail and Microsoft, IMAP credential management,
+        token refresh pipelines, and Fernet AES-256 encryption at rest.
+      labels: [backend, security]
+      priority: Critical
+
+    - name: Email Sync Engine
+      description: >
+        IMAP polling, IDLE push, Microsoft Graph webhooks, Gmail Pub/Sub,
+        sync deduplication, and connection health monitoring.
+      labels: [backend, worker]
+      priority: Critical
+
+    - name: Email Forwarding Engine
+      description: >
+        SMTP relay, Google Gmail API send, Microsoft Graph sendMail,
+        HTML rewriting for forwarded emails, and granular forwarding rules.
+      labels: [backend, worker]
+      priority: High
+
+    - name: Mission Control
+      description: >
+        Real-time internal admin dashboard: system health metrics, user telemetry,
+        CPU/storage interval graphs, and operator controls.
+      labels: [frontend, infra]
+      priority: Medium
+
+    - name: Telegram Bot
+      description: >
+        aiogram Telegram bot: /start, /connect, /rules, /settings, /disconnect
+        commands, and Telegram Mini App (WebApp) integration.
+      labels: [backend, api]
+      priority: High
+
+    - name: Infrastructure
+      description: >
+        Docker Compose orchestration, Nginx SSL reverse proxy, Redis configuration,
+        Celery Beat scheduler, and Hetzner VPS provisioning.
+      labels: [infra, docker]
+      priority: High
+
+    - name: Monitoring & Observability
+      description: >
+        Celery Flower monitoring, log aggregation to Google Drive, health check
+        endpoints, and system metrics collection.
+      labels: [infra, monitoring]
+      priority: Medium
+
+    - name: Security
+      description: >
+        Security hardening: auth middleware, internal API endpoint protection,
+        Nginx proxy blocking, Redis rate limiting, and input sanitisation.
+      labels: [security, backend]
+      priority: Critical
+
+    - name: Deployment
+      description: >
+        Production deployment workflow: SSL certificate management, domain
+        configuration, Docker build pipeline, and environment secrets management.
+      labels: [infra, deploy]
+      priority: High
+
+    - name: Documentation
+      description: >
+        Engineering OS: Confluence page hierarchy, ADRs, runbooks, API docs,
+        architecture diagrams, and developer onboarding guides.
+      labels: [documentation]
+      priority: Medium
+
+    - name: Technical Debt
+      description: >
+        Known technical debt items, refactoring backlog, code quality improvements,
+        and deferred architecture migrations.
+      labels: [tech-debt]
+      priority: Low
+
+  components:
+    - name: Backend
+      description: "FastAPI application, REST API routes, and core business logic"
+    - name: Frontend
+      description: "Next.js dashboard client and Telegram Mini App"
+    - name: Worker
+      description: "Celery task workers: sync, notify, forward, beat scheduler"
+    - name: Infrastructure
+      description: "Docker Compose, Nginx, VPS provisioning, and networking"
+    - name: Database
+      description: "PostgreSQL schema, Alembic migrations, and query optimisation"
+    - name: Redis
+      description: "Redis configuration, rate limiting, locking, and caching"
+    - name: Docker
+      description: "Dockerfiles, multi-stage builds, and image management"
+    - name: Celery
+      description: "Celery configuration, queue routing, and task monitoring"
+    - name: Monitoring
+      description: "Flower, health endpoints, log backup, and alerting"
+    - name: Security
+      description: "Auth middleware, Fernet encryption, and security hardening"
+    - name: Website
+      description: "GitHub Pages landing page"
+    - name: Mission Control
+      description: "Internal operator dashboard for system monitoring"
+    - name: Telegram
+      description: "aiogram bot handlers, commands, and WebApp"
+    - name: Google API
+      description: "Gmail OAuth, Google Drive, and Google REST API integrations"
+    - name: Microsoft Graph
+      description: "Microsoft OAuth, Outlook API, and Graph API integrations"
+
+  versions:
+    - name: "Private Beta"
+      description: "Initial private beta — limited user testing"
+      released: false
+    - name: "Production Beta"
+      description: "Public beta — broader user access with known limitations"
+      released: false
+    - name: "v1.0"
+      description: "First stable production release"
+      released: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Confluence Page Hierarchy
+# ─────────────────────────────────────────────────────────────────────────────
+confluence:
+  root_page: "EmailAgg"
+  default_labels:
+    - "EmailAgg"
+    - "Engineering OS"
+
+  pages:
+    EmailAgg:
+      template: product.md
+      labels: [product, emailagg]
+      children:
+        Home:
+          template: product.md
+          description: "EmailAgg project home page. Links to all key resources."
+
+        Product:
+          template: product.md
+          children:
+            Product Vision:
+              template: product.md
+              description: "Mission, vision, target users, success metrics, and go-to-market."
+            Roadmap:
+              template: product.md
+              description: "Product roadmap: current priorities, upcoming milestones, and future vision."
+            Release Notes:
+              template: product.md
+              description: "Per-release changelog and user-facing release summaries."
+            Changelog:
+              template: product.md
+              description: "Auto-generated technical changelog from Git commit history."
+
+        Architecture:
+          template: architecture.md
+          children:
+            Overview:
+              template: architecture.md
+              description: "High-level system architecture: components, data flow, and integration points."
+            Backend:
+              template: architecture.md
+              description: "FastAPI backend architecture: routes, services, middleware, and data models."
+              repository_paths:
+                - /backend/app/
+                - /backend/app/api/
+                - /backend/app/services/
+            Frontend:
+              template: architecture.md
+              description: "Next.js frontend architecture: pages, components, and Telegram Mini App."
+              repository_paths:
+                - /frontend/
+            Database:
+              template: architecture.md
+              description: "PostgreSQL schema, table design, indexes, migrations, and data retention."
+              repository_paths:
+                - /backend/app/db/
+                - /backend/alembic/
+            Queue Architecture:
+              template: architecture.md
+              description: "4-queue Celery architecture: sync, notify, forward, and beat scheduler queues."
+              repository_paths:
+                - /backend/app/workers/
+            Infrastructure:
+              template: architecture.md
+              description: "Docker Compose services, networking, volumes, and VPS architecture."
+              repository_paths:
+                - /docker-compose.yml
+                - /infra/
+            Deployment:
+              template: architecture.md
+              description: "Production deployment process: build, push, deploy, and rollback procedures."
+            External Services:
+              template: architecture.md
+              description: "Gmail API, Microsoft Graph API, Telegram Bot API, and third-party integrations."
+
+        ADRs:
+          template: adr.md
+          description: "Architecture Decision Records for EmailAgg. Read ADR-000 for the template."
+          children:
+            ADR-000 Template:
+              template: adr.md
+              status: Template
+            ADR-001 Use PostgreSQL as Primary Database:
+              template: adr.md
+              status: Accepted
+            ADR-002 OAuth2 for Gmail and Microsoft Authentication:
+              template: adr.md
+              status: Accepted
+            ADR-003 Celery with Redis as Task Queue:
+              template: adr.md
+              status: Accepted
+            ADR-004 Fernet Encryption for Credential Storage:
+              template: adr.md
+              status: Accepted
+            ADR-005 IMAP IDLE for Real-Time Email Sync:
+              template: adr.md
+              status: Accepted
+            ADR-006 Microsoft Graph API over IMAP for Outlook:
+              template: adr.md
+              status: Accepted
+            ADR-007 Docker Compose for Production Orchestration:
+              template: adr.md
+              status: Accepted
+            ADR-008 Nginx as Reverse Proxy with SSL Termination:
+              template: adr.md
+              status: Accepted
+            ADR-009 aiogram for Telegram Bot Framework:
+              template: adr.md
+              status: Accepted
+            ADR-010 Next.js for Frontend Dashboard:
+              template: adr.md
+              status: Accepted
+            ADR-011 Redis Rate Limiting and Distributed Locking:
+              template: adr.md
+              status: Accepted
+            ADR-012 Alembic for Database Migration Management:
+              template: adr.md
+              status: Accepted
+            ADR-013 Google Drive for Log Backups:
+              template: adr.md
+              status: Accepted
+            ADR-014 4-Queue Celery Architecture:
+              template: adr.md
+              status: Accepted
+            ADR-015 FastAPI for REST API Backend:
+              template: adr.md
+              status: Accepted
+            ADR-016 In-Memory IMAP Parser for HTML Email Forwarding:
+              template: adr.md
+              status: Accepted
+            ADR-017 Flower for Celery Worker Monitoring:
+              template: adr.md
+              status: Accepted
+            ADR-018 Security Hardening Strategy:
+              template: adr.md
+              status: Accepted
+            ADR-019 Telegram WebApp for Dashboard Access:
+              template: adr.md
+              status: Accepted
+            ADR-020 Mission Control Internal Dashboard:
+              template: adr.md
+              status: Accepted
+
+        API:
+          template: api.md
+          children:
+            REST API:
+              template: api.md
+              description: "Public REST API documentation: endpoints, schemas, auth, and examples."
+              repository_paths:
+                - /backend/app/api/routes/
+            Internal APIs:
+              template: api.md
+              description: "Internal API endpoints used by Celery workers and Mission Control."
+            Authentication:
+              template: api.md
+              description: "OAuth2 flows, JWT validation, Telegram WebApp auth, and token management."
+            Webhooks:
+              template: api.md
+              description: "Outbound webhooks and event notification design (future)."
+
+        Infrastructure:
+          template: architecture.md
+          children:
+            Docker:
+              template: architecture.md
+              description: "Docker service definitions, Dockerfiles, and multi-stage build strategy."
+              repository_paths:
+                - /docker-compose.yml
+                - /backend/Dockerfile
+            Redis:
+              template: architecture.md
+              description: "Redis configuration, data structures, TTLs, and eviction policy."
+            Celery:
+              template: architecture.md
+              description: "Celery worker configuration, routing, concurrency, and task monitoring."
+            VPS:
+              template: architecture.md
+              description: "Hetzner VPS provisioning, firewall rules, and SSH key management."
+            Monitoring:
+              template: architecture.md
+              description: "Celery Flower, health checks, log collection, and alerting strategy."
+            Logging:
+              template: architecture.md
+              description: "Log format, log levels, output routing, and backup procedure."
+              repository_paths:
+                - /scripts/
+            Backups:
+              template: architecture.md
+              description: "Google Drive log backup schedule and recovery procedure."
+              repository_paths:
+                - /scripts/
+            Nginx:
+              template: architecture.md
+              description: "Nginx config: SSL termination, reverse proxy rules, and security headers."
+              repository_paths:
+                - /infra/nginx/
+
+        Operations:
+          template: product.md
+          children:
+            Runbooks:
+              template: runbook.md
+              children:
+                Runbook — Deploy to Production:
+                  template: runbook.md
+                  severity: P2
+                Runbook — Restart Celery Workers:
+                  template: runbook.md
+                  severity: P2
+                Runbook — Database Migration:
+                  template: runbook.md
+                  severity: P1
+                Runbook — Redis Flush and Recovery:
+                  template: runbook.md
+                  severity: P1
+                Runbook — SSL Certificate Renewal:
+                  template: runbook.md
+                  severity: P2
+                Runbook — Log Backup Verification:
+                  template: runbook.md
+                  severity: P3
+            Incident Response:
+              template: runbook.md
+              description: "Incident classification, response workflow, and post-mortem process."
+            Disaster Recovery:
+              template: runbook.md
+              description: "Full disaster recovery procedure: data backup, restore, and RTO/RPO targets."
+            Maintenance:
+              template: runbook.md
+              description: "Scheduled maintenance windows, dependency updates, and certificate renewals."
+
+        Development:
+          template: product.md
+          children:
+            Repository Structure:
+              template: architecture.md
+              description: "Explanation of the monorepo layout and each directory's purpose."
+            Environment Variables:
+              template: architecture.md
+              description: "Complete reference for all .env variables and their values."
+              repository_paths:
+                - /.env.example
+            Coding Standards:
+              template: product.md
+              description: "Python style guide, type hints policy, test coverage requirements."
+            Technical Debt:
+              template: product.md
+              description: "Known technical debt, deferred refactors, and improvement backlog."

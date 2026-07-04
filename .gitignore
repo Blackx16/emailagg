@@ -24,3 +24,11 @@ redis_data/
 # Misc
 .DS_Store
 *.log
+
+# Bootstrap venv
+bootstrap_venv/
+
+# Bootstrap output (generated reports, logs)
+bootstrap/output/*.log
+bootstrap/output/*.md
+bootstrap/.env
