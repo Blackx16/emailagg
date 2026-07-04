@@ -102,7 +102,7 @@ class JiraClient:
             List of issue dicts.
         """
         resp = self._get(
-            f"{self._base}/search",
+            f"{self._base}/search/jql",
             params={"jql": jql, "fields": fields, "maxResults": 50},
         )
         return deep_get(resp, "issues") or []
