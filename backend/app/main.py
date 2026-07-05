@@ -11,7 +11,6 @@ from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.redis import close_redis
 from app.db.session import engine
-from app.db import models  # noqa: F401 — ensure models are imported for Alembic
 
 
 @asynccontextmanager
