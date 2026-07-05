@@ -131,16 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // we can add a bypass in the backend if initData is "dev_bypass_telegram_id_12345"!
       // That is extremely simple and requires no structural changes.
       
-      const initDataBypass = `hash=dummy&user={"id":${telegramId},"username":"dev_test"}&auth_date=12345`;
-      const response = await apiFetch("/api/v1/auth/telegram/login", {
-        method: "POST",
-        body: JSON.stringify({ initData: initDataBypass }),
-      });
-      
-      setToken(response.access_token);
-      setUser(response.user);
-      localStorage.setItem("emailagg_jwt", response.access_token);
-      localStorage.setItem("emailagg_user", JSON.stringify(response.user));
+      throw new Error("Manual local login bypass has been removed for security reasons. Please use the Telegram WebApp.");
     } catch (err: any) {
       console.error("Manual dev login failed:", err);
       setError(err.message || "Bypass authentication failed.");
