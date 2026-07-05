@@ -148,15 +148,19 @@ class GmailSyncService:
         """Fetch message details and store new emails, deduplicating by message_id."""
         new_emails_count = 0
 
+        existing_msg_ids = set()
+        if msg_ids:
+            # Bulk fetch existing message IDs to prevent N+1 query problem
+            stmt_existing = select(Email.message_id).where(
+                Email.mail_account_id == self.account.id,
+                Email.message_id.in_(msg_ids)
+            )
+            existing_result = await self.db.execute(stmt_existing)
+            existing_msg_ids = set(existing_result.scalars().all())
+
         for msg_id in msg_ids:
             # Deduplicate by checking if message_id is already stored for this account
-            stmt_email = select(Email).where(
-                Email.mail_account_id == self.account.id, Email.message_id == msg_id
-            )
-            email_result = await self.db.execute(stmt_email)
-            existing_email = email_result.scalar_one_or_none()
-
-            if existing_email:
+            if msg_id in existing_msg_ids:
                 continue
 
             # Fetch metadata headers for this message (efficient retrieval)
