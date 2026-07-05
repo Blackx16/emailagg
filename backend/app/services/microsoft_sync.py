@@ -58,10 +58,10 @@ class MicrosoftSyncService:
 
             new_emails_count = 0
 
-            # Fetch all existing message IDs for the current batch of messages in one query
-            fetched_msg_ids = [msg["id"] for msg in messages]
             existing_msg_ids = set()
-            if fetched_msg_ids:
+            if messages:
+                # Bulk fetch existing message IDs to prevent N+1 query problem
+                fetched_msg_ids = [msg["id"] for msg in messages]
                 stmt_existing = select(Email.message_id).where(
                     Email.mail_account_id == self.account.id,
                     Email.message_id.in_(fetched_msg_ids)
@@ -73,6 +73,7 @@ class MicrosoftSyncService:
             for msg in reversed(messages):
                 msg_id = msg["id"]
 
+                # Deduplicate by checking if message_id is already stored for this account
                 if msg_id in existing_msg_ids:
                     continue
 

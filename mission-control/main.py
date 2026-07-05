@@ -21,8 +21,11 @@ logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(m
 logger = logging.getLogger(__name__)
 
 # Config
-ADMIN_USERNAME = os.environ.get("BASIC_AUTH_USER", "admin")
-ADMIN_PASSWORD = os.environ.get("BASIC_AUTH_PASSWORD", "change_this_password")
+ADMIN_USERNAME = os.environ.get("BASIC_AUTH_USER")
+ADMIN_PASSWORD = os.environ.get("BASIC_AUTH_PASSWORD")
+
+if not ADMIN_USERNAME or not ADMIN_PASSWORD:
+    raise RuntimeError("Security Risk: BASIC_AUTH_USER and BASIC_AUTH_PASSWORD environment variables must be explicitly set. Hardcoded defaults have been removed.")
 
 # Docker client setup
 docker_client = None

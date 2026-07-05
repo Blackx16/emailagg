@@ -1,0 +1,3 @@
+# output/.gitkeep
+# This directory is used for bootstrap run logs and reports.
+# Contents are git-ignored.

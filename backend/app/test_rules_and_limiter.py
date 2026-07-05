@@ -2,6 +2,21 @@ import httpx
 import sys
 import time
 import uuid
+import hmac
+import hashlib
+from app.core.config import settings
+
+def _generate_valid_init_data(telegram_id: int, username: str) -> str:
+    auth_date = int(time.time())
+    params = {
+        "user": f'{{"id":{telegram_id},"username":"{username}"}}',
+        "auth_date": str(auth_date)
+    }
+    sorted_params = sorted(params.items())
+    data_check_string = "\n".join(f"{k}={v}" for k, v in sorted_params)
+    secret_key = hmac.new(b"WebAppData", settings.TELEGRAM_BOT_TOKEN.encode(), hashlib.sha256).digest()
+    calc_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+    return f"user={params['user']}&auth_date={auth_date}&hash={calc_hash}"
 
 def test_login_rate_limiting():
     print("--- Testing Telegram Login Rate Limiting ---")
@@ -11,7 +26,7 @@ def test_login_rate_limiting():
     # We will make up to 50 requests. The limit is 20/minute.
     # Since Uvicorn runs 2 workers, requests are load balanced. 50 requests guarantees 429 triggers.
     got_429 = False
-    init_data = 'hash=dummy&user={"id":12345,"username":"rate_limit_test"}&auth_date=12345'
+    init_data = _generate_valid_init_data(12345, "rate_limit_test")
     
     print("Sending concurrent login requests to trigger rate limit (20/min)...")
     for i in range(1, 51):
@@ -38,7 +53,7 @@ def test_rules_crud():
     base_url = "http://localhost:8000"
     telegram_id = 88812345
     
-    init_data = f'hash=dummy&user={{"id":{telegram_id},"username":"crud_test"}}&auth_date=12345'
+    init_data = _generate_valid_init_data(telegram_id, "crud_test")
     login_url = f"{base_url}/api/v1/auth/telegram/login"
     
     print("Logging in to get token...")

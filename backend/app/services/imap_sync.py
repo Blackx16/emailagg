@@ -74,6 +74,11 @@ class IMAPSyncService:
             user_result = await self.db.execute(stmt)
             telegram_id = user_result.scalar_one()
 
+            # Pre-fetch existing message IDs to avoid N+1 queries during deduplication
+            stmt_existing = select(Email.message_id).where(Email.mail_account_id == self.account.id)
+            existing_result = await self.db.execute(stmt_existing)
+            existing_message_ids = set(existing_result.scalars().all())
+
             new_emails_count = 0
             # Sync oldest emails first to maintain chronological notification order
             for uid_bytes in uids:
@@ -104,15 +109,12 @@ class IMAPSyncService:
                 else:
                     message_id = message_id.strip()
 
-                # Deduplicate by checking if message_id is already stored for this account
-                stmt_email = select(Email).where(
-                    Email.mail_account_id == self.account.id, Email.message_id == message_id
-                )
-                email_result = await self.db.execute(stmt_email)
-                existing_email = email_result.scalar_one_or_none()
-
-                if existing_email:
+                # Deduplicate using the pre-fetched message IDs
+                if message_id in existing_message_ids:
                     continue
+
+                # Add it to the set to prevent in-batch duplicates
+                existing_message_ids.add(message_id)
 
                 # 2. Fetch full raw email bytes (use PEEK to avoid marking it read)
                 fetch_resp = await imap_client.uid("fetch", uid, "BODY.PEEK[]")

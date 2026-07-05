@@ -256,10 +256,9 @@ async def test_api_forwarding():
             mock_get.return_value = mock_gmail_get_response
             mock_post.return_value = mock_gmail_post_response
             
-            # Run check_and_forward for Google
-            from app.services.forwarding_service import check_and_forward
-            res = await check_and_forward(email, gmail_account, mock_db)
-            assert res is True
+            # Run _send_forward for Google to bypass enqueue behavior
+            from app.services.forwarding_service import _send_forward
+            await _send_forward(email, gmail_account, "forwarded@target.com", mock_db)
             
             # Verify full message payload was fetched
             mock_get.assert_called_once()
@@ -292,9 +291,8 @@ async def test_api_forwarding():
             mock_get_ms.return_value = mock_ms_get_response
             mock_post_ms.return_value = mock_ms_post_response
             
-            # Run check_and_forward for Microsoft
-            res = await check_and_forward(email, ms_account, mock_db)
-            assert res is True
+            # Run _send_forward for Microsoft
+            await _send_forward(email, ms_account, "forwarded@target.com", mock_db)
             
             # Verify body was fetched
             mock_get_ms.assert_called_once()

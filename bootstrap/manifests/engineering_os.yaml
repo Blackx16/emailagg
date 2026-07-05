@@ -1,0 +1,173 @@
+# engineering_os.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Engineering OS Root Manifest
+#
+# Defines the top-level Confluence page hierarchy and Jira configuration
+# for the Engineering Operating System.
+#
+# This file drives the root space structure. Project-specific content
+# is defined in separate project manifests (e.g., emailagg.yaml).
+#
+# Structure:
+#   confluence:
+#     space: Root Confluence space configuration
+#     pages: Recursive page hierarchy
+#   jira:
+#     global: Global Jira settings (labels, field mappings)
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: "1.0"
+kind: EngineeringOS
+
+metadata:
+  name: Engineering OS
+  description: >
+    Production-grade Engineering Operating System for Atlassian.
+    Serves as the single source of truth for engineering knowledge,
+    architecture decisions, runbooks, and project documentation.
+  owner: "Chandraveer S Solanki"
+  created: "2026-07-05"
+  tags:
+    - engineering-os
+    - confluence
+    - jira
+    - knowledge-base
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Atlassian Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+atlassian:
+  base_url: "https://lazyahh.atlassian.net"
+  cloud_id: "89763908-5ea6-463e-b402-b68328be1500"
+  confluence:
+    space_key: "TWC"
+    space_id: "65841"
+    space_name: "Teamwork Collection"
+  jira:
+    default_project_key: "LAZYA"
+    default_assignee: "712020:f3a98c94-f7ec-4341-b191-fb670a7b0ee5"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Confluence Page Hierarchy
+# ─────────────────────────────────────────────────────────────────────────────
+confluence:
+  default_labels:
+    - "Engineering OS"
+    - "Root"
+    - "Engineering"
+
+  pages:
+    Engineering:
+      template: product.md
+      labels: ["root", "engineering-os"]
+      children:
+        Projects:
+          template: product.md
+          description: "Index of all product projects managed by this Engineering OS."
+          # Project-specific pages are loaded from project manifests
+          children: {}
+
+        Templates:
+          template: product.md
+          description: "Standard page templates for consistent documentation."
+          children:
+            ADR Template:
+              template: adr.md
+            Architecture Template:
+              template: architecture.md
+            Runbook Template:
+              template: runbook.md
+            API Template:
+              template: api.md
+            Product Vision Template:
+              template: product.md
+
+        Engineering Handbook:
+          template: product.md
+          description: >
+            Engineering principles, standards, and expectations for all
+            engineers working on platform products.
+          children:
+            Code Review Standards: {}
+            Git Workflow: {}
+            Testing Standards: {}
+            Incident Management: {}
+            On-Call Procedures: {}
+
+        Architecture:
+          template: architecture.md
+          description: "Cross-cutting architecture documentation and system-wide design decisions."
+          children:
+            System Overview: {}
+            Data Flow: {}
+            Security Model: {}
+            Networking: {}
+
+        Runbooks:
+          template: runbook.md
+          description: "Operational runbooks for common infrastructure tasks."
+          children:
+            Platform Health Check: {}
+            Emergency Response: {}
+
+        Standards:
+          template: product.md
+          description: "Engineering standards, linting rules, and quality gates."
+          children:
+            Python Standards: {}
+            API Design Standards: {}
+            Database Standards: {}
+            Security Standards: {}
+
+        Decision Records:
+          template: adr.md
+          description: "Cross-project Architecture Decision Records."
+          children:
+            ADR-GLOBAL-001 Atlassian as Engineering OS: {}
+            ADR-GLOBAL-002 Docker Compose for MVP Deployments: {}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Global Jira Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+jira:
+  global_labels:
+    - "Engineering OS"
+    - "Root"
+  issue_types:
+    - Epic
+    - Story
+    - Task
+    - Bug
+    - Sub-task
+  priorities:
+    - Critical
+    - High
+    - Medium
+    - Low
+  custom_field_mappings:
+    epic_name: "customfield_10011"
+    story_points: "customfield_10016"
+    sprint: "customfield_10020"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Bootstrap Behaviour
+# ─────────────────────────────────────────────────────────────────────────────
+bootstrap:
+  idempotent: true           # Always safe to re-run
+  dry_run: false             # Override with --dry-run CLI flag
+  resume: true               # Skip existing items by default
+  max_retries: 5
+  retry_backoff_base: 2.0
+  request_timeout: 30
+  log_level: "INFO"
+  output_dir: "output/"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Projects (registered product manifests)
+# ─────────────────────────────────────────────────────────────────────────────
+projects:
+  - name: EmailAgg
+    manifest: emailagg.yaml
+    confluence_parent: "Projects"
+    jira_project_key: "LAZYA"
+    active: true
