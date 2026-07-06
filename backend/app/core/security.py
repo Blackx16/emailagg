@@ -77,7 +77,8 @@ def verify_telegram_init_data(init_data: str, bot_token: str) -> dict | None:
         logger.debug(f"Telegram Auth: data_check_string:\n{data_check_string}")
         logger.debug(f"Telegram Auth: calculated_hash={calculated_hash}")
         
-        if calculated_hash != received_hash:
+        # Use constant-time comparison to prevent timing attacks
+        if not hmac.compare_digest(calculated_hash, received_hash):
             logger.warning("Telegram signature verification failed.")
             return None
             
