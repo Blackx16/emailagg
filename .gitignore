@@ -32,3 +32,6 @@ bootstrap_venv/
 bootstrap/output/*.log
 bootstrap/output/*.md
 bootstrap/.env
+
+# Agent instructions
+agent.md
