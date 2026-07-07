@@ -28,7 +28,6 @@ class TelemetryClient:
             self.posthog = Posthog(
                 settings.POSTHOG_API_KEY,
                 host=settings.POSTHOG_HOST,
-                enable_exception_autocapture=True,
             )
             atexit.register(self.posthog.shutdown)
             
