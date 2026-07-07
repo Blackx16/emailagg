@@ -150,32 +150,75 @@ async def outlook_webhook(
 ):
     """
     Microsoft Graph Webhook endpoint for Outlook mail notifications.
+
+    Message ID extraction uses the `resource` field (always present) rather
+    than `resourceData.id` (only present when subscriptions are created with
+    includeResourceData + encryptionCertificate, which we do not configure).
+    See: https://learn.microsoft.com/graph/webhooks
     """
     # 1. Validation Handshake
     if validationToken:
         return Response(content=validationToken, media_type="text/plain", status_code=200)
-        
+
     if request.method == "GET":
         raise HTTPException(status_code=405, detail="Method Not Allowed")
 
     # 2. Process Notifications
     payload = await request.json()
     notifications = payload.get("value", [])
-    
+
     if not notifications:
         return Response(status_code=202)
 
     from app.workers.outlook_webhook_tasks import process_outlook_notification
+    from app.core.telemetry import telemetry
 
-    # Pass the raw data straight to Celery (Sub-millisecond processing)
     for notif in notifications:
         sub_id = notif.get("subscriptionId")
         client_state = notif.get("clientState")
-        resource_data = notif.get("resourceData", {})
-        message_id = resource_data.get("id")
-        
+
+        # Extract message ID from the `resource` string — Graph always populates
+        # this field regardless of resourceData / encryptionCertificate config.
+        # Format: "me/mailFolders/inbox/messages/{message-id}"
+        #      or "Users/{user-id}/Messages/{message-id}"
+        resource = notif.get("resource", "")
+        message_id = resource.rsplit("/", 1)[-1] if resource else None
+
+        # ── Unconditional observability: log every notification before any filter ──
+        logger.info(
+            "[OUTLOOK WEBHOOK NOTIF] subscriptionId=%s resource=%r message_id=%r",
+            sub_id,
+            resource,
+            message_id,
+        )
+
+        # ── PostHog: count every notification received (pre-filter) ──
+        telemetry.capture(
+            distinct_id=str(sub_id) if sub_id else "unknown",
+            event="outlook_webhook_received",
+            properties={"subscription_id": sub_id, "resource": resource},
+        )
+
         if not sub_id or not client_state or not message_id:
-            logger.warning("Incomplete notification payload received.")
+            logger.warning(
+                "[OUTLOOK WEBHOOK NOTIF] Incomplete notification dropped — "
+                "subscriptionId=%s client_state_present=%s message_id=%r resource=%r",
+                sub_id,
+                bool(client_state),
+                message_id,
+                resource,
+            )
+            # ── PostHog: count incomplete/dropped notifications ──
+            telemetry.capture(
+                distinct_id=str(sub_id) if sub_id else "unknown",
+                event="outlook_webhook_notification_incomplete",
+                properties={
+                    "subscription_id": sub_id,
+                    "resource": resource,
+                    "has_client_state": bool(client_state),
+                    "has_message_id": bool(message_id),
+                },
+            )
             continue
 
         # Enqueue the task with client_state included
