@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { AuthProvider } from "@/context/AuthContext";
+import { CSPostHogProvider } from "./providers";
+import SuspendedPostHogPageView from "./PostHogPageView";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,7 +40,10 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-[#090a0f] text-slate-100">
+        <CSPostHogProvider>
+          <SuspendedPostHogPageView />
           <AuthProvider>{children}</AuthProvider>
+        </CSPostHogProvider>
       </body>
     </html>
   );

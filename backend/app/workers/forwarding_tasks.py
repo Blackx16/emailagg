@@ -67,10 +67,13 @@ async def forward_email_task(self, email_id: str, rule_id: str):
                 rule_id,
                 rule.forward_to_email,
             )
-            telemetry.capture(
-                str(account.user_id),
-                "Email Forwarded",
-                {"rule_id": rule_id, "provider": account.provider},
+            await telemetry.log_event(
+                db=db,
+                service="worker_forwarding",
+                event_type="Email Forwarded",
+                user_id=account.user_id,
+                worker=self.request.hostname,
+                metadata_payload={"rule_id": rule_id, "provider": account.provider},
             )
         except Exception as exc:
             logger.error(

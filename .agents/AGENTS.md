@@ -25,3 +25,4 @@ ssh -i emailagg-vm_key.pem azureuser@4.218.8.104
 ```
 The repository is cloned to `~/emailagg` on the remote host, and is orchestrated using `docker-compose.yml`.
 
+- **Direct VPS Editing**: Whenever instructed to make code fixes or run commands, do it directly on the production Azure VPS (`azureuser@4.218.8.104`) in the `~/emailagg` directory, and NEVER in the local workspace unless specifically told to do so.

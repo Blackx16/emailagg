@@ -50,6 +50,8 @@ interface EmailItem {
   snippet: string | null;
   has_attachment: boolean;
   is_read: boolean;
+  body_html?: string | null;
+  body_text?: string | null;
 }
 
 export default function DashboardPage() {
@@ -109,6 +111,7 @@ export default function DashboardPage() {
   const [selectedEmail, setSelectedEmail] = useState<EmailItem | null>(null);
   const [emailDetailLoading, setEmailDetailLoading] = useState(false);
   const [emailDetail, setEmailDetail] = useState<any | null>(null);
+  const [emailBodyView, setEmailBodyView] = useState<"html" | "text">("html");
   
   // IMAP connect dialog state
   const [showImapDialog, setShowImapDialog] = useState(false);
@@ -500,6 +503,7 @@ export default function DashboardPage() {
     setSelectedEmail(email);
     setEmailDetailLoading(true);
     setEmailDetail(null);
+    setEmailBodyView("html"); // Reset view on new email
     try {
       const details = await apiFetch(`/api/v1/emails/${email.id}`, { token });
       setEmailDetail(details);
@@ -980,10 +984,59 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        <div className="flex-1 text-xs text-slate-300 leading-relaxed overflow-y-auto max-h-[35vh] bg-slate-950/30 border border-slate-900/60 p-3 rounded-xl whitespace-pre-wrap font-sans">
-                          {selectedEmail.snippet}
-                          {"\n\n[Full HTML content and body rendering is managed on the client's mail handler. Aggegated snippets are securely cached inside the multitenant pipeline.]"}
-                        </div>
+                        {/* Body view toggle — only show if we have a body */}
+                        {(emailDetail?.body_html || emailDetail?.body_text) && (
+                          <div className="flex items-center space-x-1 border border-slate-800 rounded-lg p-0.5 self-start bg-slate-950/60">
+                            <button
+                              onClick={() => setEmailBodyView("html")}
+                              disabled={!emailDetail?.body_html}
+                              className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition cursor-pointer ${
+                                emailBodyView === "html"
+                                  ? "bg-indigo-600 text-white shadow-sm"
+                                  : "text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                              }`}
+                            >
+                              🎨 HTML
+                            </button>
+                            <button
+                              onClick={() => setEmailBodyView("text")}
+                              disabled={!emailDetail?.body_text}
+                              className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition cursor-pointer ${
+                                emailBodyView === "text"
+                                  ? "bg-slate-700 text-white shadow-sm"
+                                  : "text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                              }`}
+                            >
+                              📄 Plain
+                            </button>
+                          </div>
+                        )}
+
+                        {/* HTML email rendered in sandboxed iframe */}
+                        {emailDetail?.body_html && emailBodyView === "html" ? (
+                          <div className="flex-1 rounded-xl overflow-hidden border border-slate-800/60" style={{ minHeight: "300px" }}>
+                            <iframe
+                              srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><base target="_blank"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;line-height:1.6;color:#1a1a1a;background:#ffffff;margin:0;padding:16px;}a{color:#0066cc;}img{max-width:100%;height:auto;}*{box-sizing:border-box;}</style></head><body>${emailDetail.body_html.replace(/`/g, '\\`')}</body></html>`}
+                              sandbox="allow-same-origin"
+                              className="w-full h-full"
+                              style={{ minHeight: "350px", border: "none", background: "white" }}
+                              title="Email body"
+                            />
+                          </div>
+                        ) : emailDetail?.body_text && (emailBodyView === "text" || !emailDetail?.body_html) ? (
+                          <div className="flex-1 text-xs text-slate-300 leading-relaxed overflow-y-auto max-h-[45vh] bg-slate-950/30 border border-slate-900/60 p-4 rounded-xl whitespace-pre-wrap font-mono">
+                            {emailDetail.body_text}
+                          </div>
+                        ) : (
+                          <div className="flex-1 space-y-2">
+                            <div className="text-xs text-slate-300 leading-relaxed overflow-y-auto max-h-[35vh] bg-slate-950/30 border border-slate-900/60 p-3 rounded-xl whitespace-pre-wrap font-sans">
+                              {selectedEmail.snippet || "No preview available."}
+                            </div>
+                            <p className="text-[10px] text-slate-500 italic px-1">
+                              Full email body will be available for newly synced emails.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

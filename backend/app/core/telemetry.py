@@ -78,8 +78,8 @@ class TelemetryClient:
         if self.posthog and user_id:
             try:
                 self.posthog.capture(
-                    str(user_id),
-                    event_type,
+                    event=event_type,
+                    distinct_id=str(user_id),
                     properties={
                         "service": service,
                         "severity": severity,
@@ -115,7 +115,7 @@ class TelemetryClient:
         if not self.posthog:
             return
         try:
-            self.posthog.identify(distinct_id, properties or {})
+            self.posthog.capture(event="$identify", distinct_id=distinct_id, properties={"$set": properties or {}})
         except Exception as e:
             logger.warning(f"PostHog identify failed: {e}")
 
@@ -124,7 +124,7 @@ class TelemetryClient:
         if not self.posthog:
             return
         try:
-            self.posthog.capture(distinct_id, event, properties or {})
+            self.posthog.capture(event=event, distinct_id=distinct_id, properties=properties or {})
         except Exception as e:
             logger.warning(f"PostHog capture failed: {e}")
 
