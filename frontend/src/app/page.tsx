@@ -1054,74 +1054,59 @@ export default function DashboardPage() {
             </div>
 
             {/* Mass Controls Panel */}
-            {accounts.filter(a => a.status !== "disconnected").length > 0 && (
-              <div className="p-4 rounded-2xl glass border border-slate-900 text-left space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-0.5">
-                    <h3 className="text-xs font-bold text-white">🎛️ Mass Controls</h3>
-                    <p className="text-[10px] text-slate-400 leading-relaxed max-w-xs">
-                      Apply preferences to all active mailboxes at once.
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <div className="space-y-2">
-                    <div className="text-[10px] uppercase font-bold text-slate-500">Dash Delivery</div>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => handleMassTogglePreference("deliver_to_dashboard", true)}
-                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-emerald-400 font-semibold rounded-lg border border-slate-800 transition"
-                      >
-                        Enable All
-                      </button>
-                      <button 
-                        onClick={() => handleMassTogglePreference("deliver_to_dashboard", false)}
-                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-rose-400 font-semibold rounded-lg border border-slate-800 transition"
-                      >
-                        Disable All
-                      </button>
+            {(() => {
+              const activeAccounts = accounts.filter(a => a.status !== "disconnected");
+              if (activeAccounts.length === 0) return null;
+              
+              const allDashEnabled = activeAccounts.every(a => a.deliver_to_dashboard);
+              const allAlertsEnabled = activeAccounts.every(a => a.notify_telegram);
+              const allForwardEnabled = activeAccounts.every(a => a.forward_enabled);
+
+              return (
+                <div className="p-4 rounded-2xl glass border border-slate-900 text-left space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-0.5">
+                      <h3 className="text-xs font-bold text-white">🎛️ Mass Controls</h3>
+                      <p className="text-[10px] text-slate-400 leading-relaxed max-w-xs">
+                        Apply preferences to all active mailboxes at once.
+                      </p>
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="text-[10px] uppercase font-bold text-slate-500">Telegram Alerts</div>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => handleMassTogglePreference("notify_telegram", true)}
-                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-emerald-400 font-semibold rounded-lg border border-slate-800 transition"
-                      >
-                        Enable All
-                      </button>
-                      <button 
-                        onClick={() => handleMassTogglePreference("notify_telegram", false)}
-                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-rose-400 font-semibold rounded-lg border border-slate-800 transition"
-                      >
-                        Disable All
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="text-[10px] uppercase font-bold text-slate-500">Email Forwarding</div>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => handleMassTogglePreference("forward_enabled", true)}
-                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-emerald-400 font-semibold rounded-lg border border-slate-800 transition"
-                      >
-                        Enable All
-                      </button>
-                      <button 
-                        onClick={() => handleMassTogglePreference("forward_enabled", false)}
-                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-rose-400 font-semibold rounded-lg border border-slate-800 transition"
-                      >
-                        Disable All
-                      </button>
-                    </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0 pt-2 text-[10px] font-semibold text-slate-400">
+                    <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Enable/Disable Dash Delivery for all">
+                      <input
+                        type="checkbox"
+                        checked={allDashEnabled}
+                        onChange={(e) => handleMassTogglePreference("deliver_to_dashboard", e.target.checked)}
+                        className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                      />
+                      <span>📬 Dash Delivery</span>
+                    </label>
+
+                    <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Enable/Disable Telegram Alerts for all">
+                      <input
+                        type="checkbox"
+                        checked={allAlertsEnabled}
+                        onChange={(e) => handleMassTogglePreference("notify_telegram", e.target.checked)}
+                        className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                      />
+                      <span>🔔 Telegram Alerts</span>
+                    </label>
+
+                    <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Enable/Disable Email Forwarding for all">
+                      <input
+                        type="checkbox"
+                        checked={allForwardEnabled}
+                        onChange={(e) => handleMassTogglePreference("forward_enabled", e.target.checked)}
+                        className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                      />
+                      <span>📤 Email Forwarding</span>
+                    </label>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* List of Connected Mailboxes */}
             <div>
