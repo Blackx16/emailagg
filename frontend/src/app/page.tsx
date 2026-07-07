@@ -947,7 +947,7 @@ export default function DashboardPage() {
                     )}
                   </div>
 
-                  <div className="p-5 glass-card rounded-2xl text-left border border-slate-900 min-h-[40vh] flex flex-col">
+                  <div className="p-5 glass-card rounded-2xl text-left border border-slate-900 h-[calc(100vh-140px)] overflow-y-auto flex flex-col">
                     {!selectedEmail ? (
                       <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
                         <Mail className="h-8 w-8 text-slate-600 mb-2" />
@@ -959,7 +959,7 @@ export default function DashboardPage() {
                         <p className="text-[10px] text-slate-500">Retrieving full message details...</p>
                       </div>
                     ) : (
-                      <div className="space-y-4 flex-1 flex flex-col">
+                      <div className="space-y-4 flex-1">
                         <div>
                           <span className="text-[9px] uppercase tracking-wider font-black text-cyan-400 bg-cyan-950/50 border border-cyan-900/40 px-1.5 py-0.5 rounded">
                             {accounts.find(a => a.id === selectedEmail.mail_account_id)?.provider || "IMAP"}
@@ -1016,22 +1016,33 @@ export default function DashboardPage() {
 
                         {/* HTML email rendered in sandboxed iframe */}
                         {emailDetail?.body_html && emailBodyView === "html" ? (
-                          <div className="flex-1 rounded-xl overflow-hidden border border-slate-700 bg-white flex flex-col shadow-lg shadow-black/20" style={{ minHeight: "400px" }}>
+                          <div className="rounded-xl overflow-hidden border border-slate-700 bg-white shadow-lg shadow-black/20 mt-2">
                             <iframe
                               srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><base target="_blank"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6;color:#1a1a1a;background:#ffffff;margin:0;padding:24px;}a{color:#0066cc;}img{max-width:100%;height:auto;}*{box-sizing:border-box;}</style></head><body>${emailDetail.body_html.replace(/`/g, '\\`')}</body></html>`}
                               sandbox="allow-same-origin"
-                              className="w-full flex-1"
-                              style={{ border: "none", background: "white", minHeight: "400px" }}
+                              className="w-full"
+                              style={{ border: "none", background: "white", minHeight: "600px" }}
                               title="Email body"
+                              onLoad={(e) => {
+                                const target = e.target as HTMLIFrameElement;
+                                if (target.contentWindow) {
+                                  try {
+                                    const contentHeight = target.contentWindow.document.documentElement.scrollHeight;
+                                    target.style.height = `${Math.max(600, contentHeight)}px`;
+                                  } catch (err) {
+                                    console.error("Could not resize iframe", err);
+                                  }
+                                }
+                              }}
                             />
                           </div>
                         ) : emailDetail?.body_text && (emailBodyView === "text" || !emailDetail?.body_html) ? (
-                          <div className="flex-1 text-xs text-slate-300 leading-relaxed overflow-y-auto max-h-[45vh] bg-slate-950/30 border border-slate-900/60 p-4 rounded-xl whitespace-pre-wrap font-mono">
+                          <div className="text-xs text-slate-300 leading-relaxed bg-slate-950/30 border border-slate-900/60 p-4 rounded-xl whitespace-pre-wrap font-mono mt-2">
                             {emailDetail.body_text}
                           </div>
                         ) : (
-                          <div className="flex-1 space-y-2">
-                            <div className="text-xs text-slate-300 leading-relaxed overflow-y-auto max-h-[35vh] bg-slate-950/30 border border-slate-900/60 p-3 rounded-xl whitespace-pre-wrap font-sans">
+                          <div className="space-y-2 mt-2">
+                            <div className="text-xs text-slate-300 leading-relaxed bg-slate-950/30 border border-slate-900/60 p-3 rounded-xl whitespace-pre-wrap font-sans">
                               {selectedEmail.snippet || "No preview available."}
                             </div>
                             <p className="text-[10px] text-slate-500 italic px-1">
