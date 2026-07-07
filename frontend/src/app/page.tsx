@@ -986,40 +986,42 @@ export default function DashboardPage() {
 
                         {/* Body view toggle — only show if we have a body */}
                         {(emailDetail?.body_html || emailDetail?.body_text) && (
-                          <div className="flex items-center space-x-1 border border-slate-800 rounded-lg p-0.5 self-start bg-slate-950/60">
+                          <div className="flex items-center space-x-3 border-b border-slate-800/60 pb-4 mb-2">
                             <button
                               onClick={() => setEmailBodyView("html")}
                               disabled={!emailDetail?.body_html}
-                              className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition cursor-pointer ${
+                              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center space-x-2 border cursor-pointer ${
                                 emailBodyView === "html"
-                                  ? "bg-indigo-600 text-white shadow-sm"
-                                  : "text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                                  ? "bg-indigo-500/10 border-indigo-500/50 text-indigo-400 shadow-sm"
+                                  : "bg-transparent border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 disabled:opacity-30 disabled:cursor-not-allowed"
                               }`}
                             >
-                              🎨 HTML
+                              <span>🎨</span>
+                              <span>HTML View</span>
                             </button>
                             <button
                               onClick={() => setEmailBodyView("text")}
                               disabled={!emailDetail?.body_text}
-                              className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition cursor-pointer ${
+                              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center space-x-2 border cursor-pointer ${
                                 emailBodyView === "text"
-                                  ? "bg-slate-700 text-white shadow-sm"
-                                  : "text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                                  ? "bg-indigo-500/10 border-indigo-500/50 text-indigo-400 shadow-sm"
+                                  : "bg-transparent border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 disabled:opacity-30 disabled:cursor-not-allowed"
                               }`}
                             >
-                              📄 Plain
+                              <span>📄</span>
+                              <span>Plain Text</span>
                             </button>
                           </div>
                         )}
 
                         {/* HTML email rendered in sandboxed iframe */}
                         {emailDetail?.body_html && emailBodyView === "html" ? (
-                          <div className="flex-1 rounded-xl overflow-hidden border border-slate-800/60" style={{ minHeight: "300px" }}>
+                          <div className="flex-1 rounded-xl overflow-hidden border border-slate-700 bg-white flex flex-col shadow-lg shadow-black/20" style={{ minHeight: "400px" }}>
                             <iframe
-                              srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><base target="_blank"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;line-height:1.6;color:#1a1a1a;background:#ffffff;margin:0;padding:16px;}a{color:#0066cc;}img{max-width:100%;height:auto;}*{box-sizing:border-box;}</style></head><body>${emailDetail.body_html.replace(/`/g, '\\`')}</body></html>`}
+                              srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><base target="_blank"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6;color:#1a1a1a;background:#ffffff;margin:0;padding:24px;}a{color:#0066cc;}img{max-width:100%;height:auto;}*{box-sizing:border-box;}</style></head><body>${emailDetail.body_html.replace(/`/g, '\\`')}</body></html>`}
                               sandbox="allow-same-origin"
-                              className="w-full h-full"
-                              style={{ minHeight: "350px", border: "none", background: "white" }}
+                              className="w-full flex-1"
+                              style={{ border: "none", background: "white", minHeight: "400px" }}
                               title="Email body"
                             />
                           </div>
