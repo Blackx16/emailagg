@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from pydantic import BaseModel
 
 from app.db.session import get_db
@@ -107,12 +107,12 @@ async def get_notification_preferences(
     """Return the user's notification limit and the computed effective floor."""
     from app.db.models import MailAccount
 
-    stmt_acc = select(MailAccount).where(
+    stmt_acc = select(func.count()).select_from(MailAccount).where(
         MailAccount.user_id == current_user.id,
         MailAccount.status != "disconnected",
     )
     res_acc = await db.execute(stmt_acc)
-    active_count = len(res_acc.scalars().all())
+    active_count = res_acc.scalar() or 0
 
     floor = max(5, math.ceil(active_count * 0.1))
     effective = _compute_effective_limit(current_user.notification_limit_per_hour, active_count)
@@ -140,12 +140,12 @@ async def update_notification_preferences(
     if payload.notification_limit_per_hour < 1:
         raise HTTPException(status_code=400, detail="Limit must be at least 1.")
 
-    stmt_acc = select(MailAccount).where(
+    stmt_acc = select(func.count()).select_from(MailAccount).where(
         MailAccount.user_id == current_user.id,
         MailAccount.status != "disconnected",
     )
     res_acc = await db.execute(stmt_acc)
-    active_count = len(res_acc.scalars().all())
+    active_count = res_acc.scalar() or 0
 
     # Persist whatever the user asked for; effective_limit is computed at send time
     stmt_user = select(User).where(User.id == current_user.id)

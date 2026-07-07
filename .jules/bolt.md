@@ -1,0 +1,3 @@
+## 2025-03-01 - Avoid fetching full ORM objects for counting
+**Learning:** Found several places where the full `MailAccount` ORM objects were fetched into memory solely to check their length via `len(res_acc.scalars().all())`. This is an N+1-like issue but for counting, scaling poorly with the number of accounts.
+**Action:** Replaced these full queries with an efficient `select(func.count()).select_from(Model)` query, returning just the integer scalar (`res_acc.scalar()`). This pushes the counting to the database, reducing memory and Python CPU overhead. This pattern should be standard practice across the codebase whenever we only need the count of rows matching a condition.
