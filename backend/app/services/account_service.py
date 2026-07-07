@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.models import User, MailAccount
 from app.core.encryption import encrypt_token
+from app.services.outlook_subscription_service import cancel_subscription
 
 async def find_or_create_oauth_account(
     telegram_id: int,
@@ -75,3 +76,14 @@ async def find_or_create_oauth_account(
         account_id = existing_account.id
 
     return user.id, account_id
+
+async def deactivate_mail_account(account: MailAccount, db: AsyncSession) -> None:
+    """Safely deactivate a mail account and clean up external resources."""
+    if account.provider == "microsoft":
+        await cancel_subscription(account, db)
+        
+    account.status = "disconnected"
+    account.access_token_encrypted = None
+    account.refresh_token_encrypted = None
+    account.token_expires_at = None
+    await db.commit()

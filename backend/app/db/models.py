@@ -82,6 +82,7 @@ class MailAccount(Base):
     user: Mapped["User"] = relationship(back_populates="mail_accounts")
     emails: Mapped[list["Email"]] = relationship(back_populates="mail_account", cascade="all, delete-orphan")
     forwarding_rules: Mapped[list["ForwardingRule"]] = relationship(back_populates="mail_account", cascade="all, delete-orphan")
+    outlook_subscription: Mapped["OutlookSubscription | None"] = relationship(back_populates="mail_account", cascade="all, delete-orphan", uselist=False)
 
 
 # ─── Emails ───────────────────────────────────────────────────
@@ -126,6 +127,39 @@ class Notification(Base):
 
     user: Mapped["User"] = relationship(back_populates="notifications")
     email: Mapped["Email"] = relationship(back_populates="notifications")
+
+
+# ─── Outlook Subscriptions ───────────────────────────────────
+class OutlookSubscription(Base):
+    """Tracks Microsoft Graph change-notification subscriptions for Outlook accounts.
+
+    One subscription per MailAccount (uselist=False on the reverse side).
+    client_state_encrypted stores a Fernet-encrypted random secret used to
+    verify the `clientState` field in incoming Graph webhook notifications.
+    """
+    __tablename__ = "outlook_subscriptions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    mail_account_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("mail_accounts.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    subscription_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    resource: Mapped[str] = mapped_column(
+        String(255), default="me/mailFolders/inbox/messages", nullable=False
+    )
+    # Fernet-encrypted random secret; populated only via app.core.encryption.encrypt_token()
+    client_state_encrypted: Mapped[str] = mapped_column(Text, nullable=False)
+    expiration_datetime: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum("active", "expired", "failed", "cancelled", name="outlook_subscription_status_enum"),
+        default="active",
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    renewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    mail_account: Mapped["MailAccount"] = relationship(back_populates="outlook_subscription")
 
 
 # ─── Forwarding Rules ─────────────────────────────────────────

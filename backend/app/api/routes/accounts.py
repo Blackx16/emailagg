@@ -5,6 +5,8 @@ import uuid
 
 from app.db.session import get_db
 from app.db.models import User, MailAccount
+from app.core.config import settings
+from app.services.account_service import deactivate_mail_account
 from app.core.security import get_current_user, verify_internal
 from app.core.telemetry import telemetry
 from pydantic import BaseModel
@@ -104,6 +106,19 @@ async def update_account_preferences(
     account.forward_enabled = prefs.forward_enabled
     await db.commit()
 
+    await telemetry.log_event(
+        db=db,
+        service="api",
+        event_type="Account Preferences Updated",
+        user_id=current_user.id,
+        metadata_payload={
+            "account_id": str(account_id),
+            "notify_telegram": prefs.notify_telegram,
+            "deliver_to_dashboard": prefs.deliver_to_dashboard,
+            "forward_enabled": prefs.forward_enabled,
+        },
+    )
+
     return {
         "status": "success",
         "preferences": {
@@ -149,11 +164,7 @@ async def disconnect_account_internal(
         raise HTTPException(status_code=404, detail="Mail account not found or access denied.")
 
     email = account.email
-    account.status = "disconnected"
-    account.access_token_encrypted = None
-    account.refresh_token_encrypted = None
-    account.token_expires_at = None
-    await db.commit()
+    await deactivate_mail_account(account, db)
 
     await telemetry.log_event(
         db=db,

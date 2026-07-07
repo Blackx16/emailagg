@@ -8,6 +8,7 @@ from sqlalchemy import select
 from app.db.session import get_db
 from app.db.models import User, MailAccount, ForwardingRule
 from app.core.security import get_current_user, verify_internal
+from app.core.telemetry import telemetry
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -83,6 +84,20 @@ async def create_rule(
     await db.refresh(new_rule)
 
     logger.info(f"User {current_user.id} created forwarding rule {new_rule.id} to {new_rule.forward_to_email}")
+    await telemetry.log_event(
+        db=db,
+        service="api",
+        event_type="Forwarding Rule Created",
+        user_id=current_user.id,
+        metadata_payload={
+            "rule_id": str(new_rule.id),
+            "is_active": new_rule.is_active,
+            "has_subject_filter": bool(new_rule.condition_subject_contains),
+            "has_domain_filter": bool(new_rule.condition_from_domain),
+            "has_email_filter": bool(new_rule.condition_from_email),
+            "has_body_filter": bool(new_rule.condition_body_contains),
+        },
+    )
     return new_rule
 
 
@@ -133,6 +148,13 @@ async def update_rule(
     await db.refresh(rule)
 
     logger.info(f"User {current_user.id} updated forwarding rule {rule.id}")
+    await telemetry.log_event(
+        db=db,
+        service="api",
+        event_type="Forwarding Rule Updated",
+        user_id=current_user.id,
+        metadata_payload={"rule_id": str(rule.id), "is_active": rule.is_active},
+    )
     return rule
 
 
@@ -160,6 +182,13 @@ async def delete_rule(
     await db.commit()
 
     logger.info(f"User {current_user.id} deleted forwarding rule {rule_id}")
+    await telemetry.log_event(
+        db=db,
+        service="api",
+        event_type="Forwarding Rule Deleted",
+        user_id=current_user.id,
+        metadata_payload={"rule_id": str(rule_id)},
+    )
     return {"status": "success", "message": "Rule deleted successfully."}
 
 

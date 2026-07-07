@@ -10,6 +10,7 @@ from app.api.routes import auth, accounts, emails, webhooks, health, users, tele
 from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.redis import close_redis
+from app.core.telemetry import telemetry
 from app.db.session import engine
 
 
@@ -20,6 +21,8 @@ async def lifespan(app: FastAPI):
     # Shutdown
     await close_redis()
     await engine.dispose()
+    if telemetry.posthog:
+        telemetry.posthog.shutdown()
 
 
 app = FastAPI(
@@ -50,6 +53,7 @@ app.add_middleware(
         "stripe-signature",
         "x-razorpay-signature",
         "x-internal-key",
+        "ms-graph-clientstate",
     ],
 )
 

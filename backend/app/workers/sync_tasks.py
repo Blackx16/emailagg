@@ -54,6 +54,9 @@ async def orchestrate_accounts(self):
 
     async with AsyncSessionLocal() as db:
         stmt = select(MailAccount.id).where(MailAccount.status != "disconnected")
+        if settings.OUTLOOK_WEBHOOKS_ENABLED:
+            stmt = stmt.where(MailAccount.provider != "microsoft")
+        
         result = await db.execute(stmt)
         account_ids = result.scalars().all()
 

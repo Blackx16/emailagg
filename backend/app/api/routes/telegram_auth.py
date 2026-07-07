@@ -10,6 +10,7 @@ from app.db.models import User
 from app.core.config import settings
 from app.core.security import verify_telegram_init_data, create_access_token
 from app.core.limiter import limiter
+from app.core.telemetry import telemetry
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -64,8 +65,22 @@ async def telegram_login(payload: TelegramLoginSchema, request: Request, db: Asy
         await db.commit()
         await db.refresh(user)
         logger.info(f"Registered new user {telegram_id} via Telegram WebApp login.")
+        await telemetry.log_event(
+            db=db,
+            service="api",
+            event_type="User Signup",
+            user_id=user.id,
+            metadata_payload={"plan": user.plan},
+        )
     else:
         logger.info(f"Authenticated existing user {telegram_id} via Telegram WebApp login.")
+        await telemetry.log_event(
+            db=db,
+            service="api",
+            event_type="User Login",
+            user_id=user.id,
+            metadata_payload={},
+        )
         
     # 4. Generate JWT access token
     access_token = create_access_token(data={"sub": str(user.id)})

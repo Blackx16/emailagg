@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     # Telemetry
     POSTHOG_API_KEY: str | None = None
+    POSTHOG_HOST: str = "https://us.i.posthog.com"
     SENTRY_DSN: str | None = None
 
     APP_ENV: str = "development"
@@ -46,6 +47,9 @@ class Settings(BaseSettings):
     # Sync settings
     SYNC_POLL_INTERVAL: int = 300
     SYNC_BATCH_SIZE: int = 50
+
+    # Outlook Webhooks Canary Flag
+    OUTLOOK_WEBHOOKS_ENABLED: bool = False
 
     # SMTP Forwarding Settings
     SMTP_HOST: str = "localhost"

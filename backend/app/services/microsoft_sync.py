@@ -71,75 +71,14 @@ class MicrosoftSyncService:
 
             # Sync oldest emails first to maintain chronological notification order
             for msg in reversed(messages):
-                msg_id = msg["id"]
-
                 # Deduplicate by checking if message_id is already stored for this account
+                msg_id = msg["id"]
                 if msg_id in existing_msg_ids:
                     continue
-
-                from_data = msg.get("from", {}).get("emailAddress", {})
-                from_email = from_data.get("address")
-                from_name = from_data.get("name")
-
-                received_str = msg.get("receivedDateTime")
-                received_at = None
-                if received_str:
-                    # Clean trailing Z to handle Python datetime conversions
-                    received_at = datetime.fromisoformat(received_str.replace("Z", "+00:00"))
-
-                # Skip if email was received before the account was connected/created
-                if received_at:
-                    received_at_utc = received_at.astimezone(timezone.utc) if received_at.tzinfo else received_at.replace(tzinfo=timezone.utc)
-                    created_at_utc = self.account.created_at.astimezone(timezone.utc) if self.account.created_at.tzinfo else self.account.created_at.replace(tzinfo=timezone.utc)
-                    if received_at_utc < created_at_utc:
-                        logger.info("Microsoft: Skipping message %s received before account registration (%s < %s)", msg_id, received_at_utc, created_at_utc)
-                        continue
-
-                # Create Email record
-                new_email = Email(
-                    mail_account_id=self.account.id,
-                    message_id=msg_id,
-                    subject=msg.get("subject"),
-                    from_email=from_email,
-                    from_name=from_name,
-                    received_at=received_at,
-                    snippet=msg.get("bodyPreview"),
-                    has_attachment=msg.get("hasAttachments", False),
-                    is_read=msg.get("isRead", False),
-                    notified=False,
-                )
-
-                async with self.db.begin_nested():
-                    try:
-                        self.db.add(new_email)
-                        await self.db.flush()  # Populate new_email.id
-                    except Exception as e:
-                        from sqlalchemy.exc import IntegrityError
-                        if isinstance(e, IntegrityError) or "unique constraint" in str(e).lower():
-                            logger.info(f"Duplicate email skipped via unique constraint: {msg_id}")
-                            continue
-                        else:
-                            raise e
-
-                # Enqueue Telegram notification task
-                from app.services.forwarding_service import extract_otp, check_and_forward
-                otp = extract_otp(new_email.subject, new_email.snippet)
-
-                if self.account.notify_telegram:
-                    notification_payload = {
-                        "subject": new_email.subject or "(No Subject)",
-                        "from_name": new_email.from_name or "Unknown",
-                        "from_email": new_email.from_email or "Unknown",
-                        "mailbox": self.account.email,
-                        "email_id": str(new_email.id),
-                    }
-                    if otp:
-                        notification_payload["otp"] = otp
-                    send_telegram_notification.delay(telegram_id, notification_payload)
-
-                # Check forwarding rules
-                await check_and_forward(new_email, self.account, self.db)
-                new_emails_count += 1
+                
+                processed = await self.process_single_message(msg, telegram_id)
+                if processed:
+                    new_emails_count += 1
 
             # Update account sync logs
             self.account.last_sync = datetime.now(timezone.utc)
@@ -148,3 +87,73 @@ class MicrosoftSyncService:
             await self.db.commit()
 
             logger.info(f"Microsoft sync finished. Synced {new_emails_count} new emails.")
+
+    async def process_single_message(self, msg: dict, telegram_id: int) -> bool:
+        """Process a single incoming email message and dispatch notifications.
+        Returns True if processed successfully, False if skipped as duplicate.
+        """
+        msg_id = msg["id"]
+        
+        from_data = msg.get("from", {}).get("emailAddress", {})
+        from_email = from_data.get("address")
+        from_name = from_data.get("name")
+
+        received_str = msg.get("receivedDateTime")
+        received_at = None
+        if received_str:
+            # Clean trailing Z to handle Python datetime conversions
+            received_at = datetime.fromisoformat(received_str.replace("Z", "+00:00"))
+
+        # Skip if email was received before the account was connected/created
+        if received_at:
+            received_at_utc = received_at.astimezone(timezone.utc) if received_at.tzinfo else received_at.replace(tzinfo=timezone.utc)
+            created_at_utc = self.account.created_at.astimezone(timezone.utc) if self.account.created_at.tzinfo else self.account.created_at.replace(tzinfo=timezone.utc)
+            if received_at_utc < created_at_utc:
+                logger.info("Microsoft: Skipping message %s received before account registration (%s < %s)", msg_id, received_at_utc, created_at_utc)
+                return False
+
+        # Create Email record
+        new_email = Email(
+            mail_account_id=self.account.id,
+            message_id=msg_id,
+            subject=msg.get("subject"),
+            from_email=from_email,
+            from_name=from_name,
+            received_at=received_at,
+            snippet=msg.get("bodyPreview"),
+            has_attachment=msg.get("hasAttachments", False),
+            is_read=msg.get("isRead", False),
+            notified=False,
+        )
+
+        async with self.db.begin_nested():
+            try:
+                self.db.add(new_email)
+                await self.db.flush()  # Populate new_email.id
+            except Exception as e:
+                from sqlalchemy.exc import IntegrityError
+                if isinstance(e, IntegrityError) or "unique constraint" in str(e).lower():
+                    logger.info(f"Duplicate email skipped via unique constraint: {msg_id}")
+                    return False
+                else:
+                    raise e
+
+        # Enqueue Telegram notification task
+        from app.services.forwarding_service import extract_otp, check_and_forward
+        otp = extract_otp(new_email.subject, new_email.snippet)
+
+        if self.account.notify_telegram:
+            notification_payload = {
+                "subject": new_email.subject or "(No Subject)",
+                "from_name": new_email.from_name or "Unknown",
+                "from_email": new_email.from_email or "Unknown",
+                "mailbox": self.account.email,
+                "email_id": str(new_email.id),
+            }
+            if otp:
+                notification_payload["otp"] = otp
+            send_telegram_notification.delay(telegram_id, notification_payload)
+
+        # Check forwarding rules
+        await check_and_forward(new_email, self.account, self.db)
+        return True

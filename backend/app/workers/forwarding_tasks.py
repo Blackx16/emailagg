@@ -6,6 +6,7 @@ from sqlalchemy import select
 from app.db.session import AsyncSessionLocal
 from app.db.models import Email, ForwardingRule, MailAccount
 from app.workers.sync_tasks import async_to_sync
+from app.core.telemetry import telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,11 @@ async def forward_email_task(self, email_id: str, rule_id: str):
                 email_id,
                 rule_id,
                 rule.forward_to_email,
+            )
+            telemetry.capture(
+                str(account.user_id),
+                "Email Forwarded",
+                {"rule_id": rule_id, "provider": account.provider},
             )
         except Exception as exc:
             logger.error(

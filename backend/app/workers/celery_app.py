@@ -5,10 +5,10 @@ celery_app = Celery(
     "emailagg",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=[
         "app.workers.sync_tasks",
         "app.workers.notification_tasks",
         "app.workers.forwarding_tasks",
+        "app.workers.outlook_webhook_tasks",
     ],
 )
 
@@ -31,6 +31,7 @@ celery_app.conf.update(
         "app.workers.sync_tasks.sync_account": {"queue": "sync"},
         "app.workers.notification_tasks.*": {"queue": "notifications"},
         "app.workers.forwarding_tasks.*": {"queue": "forwarding"},
+        "app.workers.outlook_webhook_tasks.*": {"queue": "outlook_webhooks"},
     },
     # ── Beat schedule ────────────────────────────────────────────────────────
     # A single lightweight orchestrator fires every SYNC_POLL_INTERVAL seconds.
@@ -42,6 +43,11 @@ celery_app.conf.update(
             "task": "app.workers.sync_tasks.orchestrate_accounts",
             "schedule": settings.SYNC_POLL_INTERVAL,
             "options": {"queue": "maintenance"},
+        },
+        "renew-outlook-subscriptions": {
+            "task": "app.workers.outlook_webhook_tasks.renew_expiring_outlook_subscriptions",
+            "schedule": 12 * 60 * 60,
+            "options": {"queue": "outlook_webhooks"},
         },
     },
 )

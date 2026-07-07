@@ -11,7 +11,8 @@ from app.core.encryption import encrypt_token
 from app.core.limiter import limiter
 from app.core.redis import get_redis
 from app.services import microsoft_auth, google_auth
-from app.services.account_service import find_or_create_oauth_account
+from app.services.account_service import find_or_create_oauth_account, deactivate_mail_account
+from app.services.outlook_subscription_service import create_subscription
 from app.workers.sync_tasks import sync_account
 from app.workers.notification_tasks import send_telegram_message
 from app.core.telemetry import telemetry
@@ -192,11 +193,7 @@ async def disconnect_account(
     if not account:
         raise HTTPException(status_code=404, detail="Mail account not found or access denied.")
 
-    account.status = "disconnected"
-    account.access_token_encrypted = None
-    account.refresh_token_encrypted = None
-    account.token_expires_at = None
-    await db.commit()
+    await deactivate_mail_account(account, db)
 
     return {"status": "success", "message": "Account disconnected successfully."}
 
@@ -228,6 +225,12 @@ async def register_oauth_account(
         user_id=user_id,
         metadata_payload={"provider": provider, "email": email}
     )
+
+    if provider == "microsoft":
+        # Resolve the MailAccount object since create_subscription needs it
+        account = await db.get(MailAccount, account_id)
+        if account:
+            await create_subscription(account, db)
 
     # Trigger async initial sync
     sync_account.delay(str(account_id))

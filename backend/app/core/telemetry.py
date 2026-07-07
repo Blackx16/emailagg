@@ -1,3 +1,4 @@
+import atexit
 import logging
 import time
 from datetime import datetime
@@ -24,7 +25,12 @@ class TelemetryClient:
         self.sentry_initialized = False
 
         if settings.POSTHOG_API_KEY:
-            self.posthog = Posthog(settings.POSTHOG_API_KEY, host="https://app.posthog.com")
+            self.posthog = Posthog(
+                settings.POSTHOG_API_KEY,
+                host=settings.POSTHOG_HOST,
+                enable_exception_autocapture=True,
+            )
+            atexit.register(self.posthog.shutdown)
             
         if settings.SENTRY_DSN:
             sentry_sdk.init(dsn=settings.SENTRY_DSN, environment=os.environ.get("ENV", "production"))
@@ -104,6 +110,24 @@ class TelemetryClient:
             logger.error(f"{log_msg} | Metadata: {metadata_payload}")
         else:
             logger.info(f"{log_msg} | Metadata: {metadata_payload}")
+
+    def identify(self, distinct_id: str, properties: Optional[dict] = None) -> None:
+        """Identify a user in PostHog with optional person properties."""
+        if not self.posthog:
+            return
+        try:
+            self.posthog.identify(distinct_id, properties or {})
+        except Exception as e:
+            logger.warning(f"PostHog identify failed: {e}")
+
+    def capture(self, distinct_id: str, event: str, properties: Optional[dict] = None) -> None:
+        """Capture a PostHog event without writing to the database."""
+        if not self.posthog:
+            return
+        try:
+            self.posthog.capture(distinct_id, event, properties or {})
+        except Exception as e:
+            logger.warning(f"PostHog capture failed: {e}")
 
 
 telemetry = TelemetryClient()

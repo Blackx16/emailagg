@@ -157,6 +157,18 @@ async def update_notification_preferences(
     floor = max(5, math.ceil(active_count * 0.1))
     effective = _compute_effective_limit(payload.notification_limit_per_hour, active_count)
 
+    await telemetry.log_event(
+        db=db,
+        service="api",
+        event_type="Notification Limit Updated",
+        user_id=current_user.id,
+        metadata_payload={
+            "limit_per_hour": payload.notification_limit_per_hour,
+            "effective_limit": effective,
+            "active_accounts": active_count,
+        },
+    )
+
     return {
         "status": "success",
         "notification_limit_per_hour": payload.notification_limit_per_hour,

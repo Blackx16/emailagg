@@ -13,6 +13,7 @@ from sqlalchemy import select, or_
 from app.db.models import MailAccount, Email, ForwardingRule
 from app.core.config import settings
 from app.core.redis import get_redis
+from app.core.telemetry import telemetry
 from app.services.token_service import get_valid_access_token
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,11 @@ async def check_and_forward(
                     if count > 50:
                         logger.warning(
                             f"Forward limit exceeded (count={count}) for user {account.user_id}. Skipping rule {rule.id}."
+                        )
+                        telemetry.capture(
+                            str(account.user_id),
+                            "Forwarding Rate Limited",
+                            {"rule_id": str(rule.id), "count": count},
                         )
                         continue
                 except Exception as redis_err:

@@ -185,6 +185,32 @@ services:
       retries: 3
       start_period: 30s
 
+  # ─── Celery Worker: Outlook Webhooks ──────────────────────────
+  worker_outlook_webhooks:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: emailagg_worker_outlook_webhooks
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+      - external  # Required: worker must reach Microsoft Graph APIs
+    command: celery -A app.workers.celery_app worker --loglevel=info -Q outlook_webhooks --concurrency=4 --hostname=worker-outlook@%h
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping --timeout 5 2>/dev/null | grep -q OK"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
   # ─── Celery Beat (scheduler) ──────────────────────────────────
   beat:
     build:
