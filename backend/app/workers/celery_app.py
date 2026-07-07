@@ -5,6 +5,7 @@ celery_app = Celery(
     "emailagg",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
+    include=[
         "app.workers.sync_tasks",
         "app.workers.notification_tasks",
         "app.workers.forwarding_tasks",
