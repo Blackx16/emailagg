@@ -311,6 +311,39 @@ export default function DashboardPage() {
     }
   };
 
+  const handleMassTogglePreference = async (
+    key: "notify_telegram" | "deliver_to_dashboard" | "forward_enabled",
+    value: boolean
+  ) => {
+    const activeAccounts = accounts.filter(a => a.status !== "disconnected");
+    if (activeAccounts.length === 0) return;
+
+    // Optimistic update
+    setAccounts(prev => prev.map(a => a.status !== "disconnected" ? { ...a, [key]: value } : a));
+
+    try {
+      await Promise.all(
+        activeAccounts.map(account => {
+          const body = {
+            notify_telegram: key === "notify_telegram" ? value : account.notify_telegram,
+            deliver_to_dashboard: key === "deliver_to_dashboard" ? value : account.deliver_to_dashboard,
+            forward_enabled: key === "forward_enabled" ? value : account.forward_enabled,
+          };
+          return apiFetch(`/api/v1/accounts/${account.id}/preferences`, {
+            method: "PUT",
+            token,
+            body,
+          });
+        })
+      );
+    } catch (err: any) {
+      console.error(`Failed to update mass preferences for ${key}:`, err);
+      // Revert fetch on error
+      fetchData(false);
+      alert(err.message || "Failed to update all preferences.");
+    }
+  };
+
   // Rules CRUD Handlers
   const fetchRules = async () => {
     if (!token) return;
@@ -1019,6 +1052,76 @@ export default function DashboardPage() {
                 )}
               </div>
             </div>
+
+            {/* Mass Controls Panel */}
+            {accounts.filter(a => a.status !== "disconnected").length > 0 && (
+              <div className="p-4 rounded-2xl glass border border-slate-900 text-left space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-0.5">
+                    <h3 className="text-xs font-bold text-white">🎛️ Mass Controls</h3>
+                    <p className="text-[10px] text-slate-400 leading-relaxed max-w-xs">
+                      Apply preferences to all active mailboxes at once.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div className="space-y-2">
+                    <div className="text-[10px] uppercase font-bold text-slate-500">Dash Delivery</div>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleMassTogglePreference("deliver_to_dashboard", true)}
+                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-emerald-400 font-semibold rounded-lg border border-slate-800 transition"
+                      >
+                        Enable All
+                      </button>
+                      <button 
+                        onClick={() => handleMassTogglePreference("deliver_to_dashboard", false)}
+                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-rose-400 font-semibold rounded-lg border border-slate-800 transition"
+                      >
+                        Disable All
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="text-[10px] uppercase font-bold text-slate-500">Telegram Alerts</div>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleMassTogglePreference("notify_telegram", true)}
+                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-emerald-400 font-semibold rounded-lg border border-slate-800 transition"
+                      >
+                        Enable All
+                      </button>
+                      <button 
+                        onClick={() => handleMassTogglePreference("notify_telegram", false)}
+                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-rose-400 font-semibold rounded-lg border border-slate-800 transition"
+                      >
+                        Disable All
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="text-[10px] uppercase font-bold text-slate-500">Email Forwarding</div>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => handleMassTogglePreference("forward_enabled", true)}
+                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-emerald-400 font-semibold rounded-lg border border-slate-800 transition"
+                      >
+                        Enable All
+                      </button>
+                      <button 
+                        onClick={() => handleMassTogglePreference("forward_enabled", false)}
+                        className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-[10px] text-rose-400 font-semibold rounded-lg border border-slate-800 transition"
+                      >
+                        Disable All
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* List of Connected Mailboxes */}
             <div>
