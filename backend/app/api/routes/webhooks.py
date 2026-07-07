@@ -167,36 +167,18 @@ async def outlook_webhook(
 
     from app.workers.outlook_webhook_tasks import process_outlook_notification
 
-    async with AsyncSessionLocal() as db:
-        for notif in notifications:
-            sub_id = notif.get("subscriptionId")
-            client_state = notif.get("clientState")
-            resource_data = notif.get("resourceData", {})
-            message_id = resource_data.get("id")
-            
-            if not sub_id or not client_state or not message_id:
-                logger.warning("Incomplete notification payload received.")
-                continue
+    # Pass the raw data straight to Celery (Sub-millisecond processing)
+    for notif in notifications:
+        sub_id = notif.get("subscriptionId")
+        client_state = notif.get("clientState")
+        resource_data = notif.get("resourceData", {})
+        message_id = resource_data.get("id")
+        
+        if not sub_id or not client_state or not message_id:
+            logger.warning("Incomplete notification payload received.")
+            continue
 
-            # Verify subscription and clientState
-            stmt = select(OutlookSubscription).where(OutlookSubscription.subscription_id == sub_id, OutlookSubscription.status == "active")
-            sub = (await db.execute(stmt)).scalar_one_or_none()
-            
-            if not sub:
-                logger.warning("Webhook received for unknown or inactive subscription: %s", sub_id)
-                continue
-                
-            try:
-                expected_state = decrypt_token(sub.client_state_encrypted)
-            except Exception as e:
-                logger.error("Failed to decrypt client_state for subscription %s: %s", sub_id, e)
-                continue
-
-            if not secrets.compare_digest(expected_state, client_state):
-                logger.warning("Invalid clientState for subscription %s", sub_id)
-                continue
-
-            # Enqueue the task
-            process_outlook_notification.delay(sub_id, message_id)
+        # Enqueue the task with client_state included
+        process_outlook_notification.delay(sub_id, message_id, client_state)
 
     return Response(status_code=202)

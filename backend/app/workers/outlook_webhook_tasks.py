@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
     name="app.workers.outlook_webhook_tasks.process_outlook_notification",
 )
 @async_to_sync
-async def process_outlook_notification(self, subscription_id: str, message_id: str):
+async def process_outlook_notification(self, subscription_id: str, message_id: str, client_state: str):
     """
     Process a single incoming Outlook message via Graph webhook.
     """
@@ -36,6 +36,19 @@ async def process_outlook_notification(self, subscription_id: str, message_id: s
         
         if not sub:
             logger.warning("No active subscription found for %s", subscription_id)
+            return
+
+        # 2. Verify clientState (Security Check)
+        try:
+            import secrets
+            from app.core.encryption import decrypt_token
+            expected_state = decrypt_token(sub.client_state_encrypted)
+        except Exception as e:
+            logger.error("Failed to decrypt client_state for subscription %s: %s", subscription_id, e)
+            return
+
+        if not secrets.compare_digest(expected_state, client_state):
+            logger.warning("Invalid clientState for subscription %s", subscription_id)
             return
             
         account = await db.get(MailAccount, sub.mail_account_id)
