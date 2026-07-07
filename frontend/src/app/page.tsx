@@ -1073,7 +1073,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0 pt-2 text-[10px] font-semibold text-slate-400">
+                  <div className="pt-2 grid grid-cols-3 gap-1.5 text-[9px] font-semibold text-slate-400">
                     <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Enable/Disable Dash Delivery for all">
                       <input
                         type="checkbox"
@@ -1081,7 +1081,7 @@ export default function DashboardPage() {
                         onChange={(e) => handleMassTogglePreference("deliver_to_dashboard", e.target.checked)}
                         className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
                       />
-                      <span>📬 Dash Delivery</span>
+                      <span>📬 Dash</span>
                     </label>
 
                     <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Enable/Disable Telegram Alerts for all">
@@ -1091,7 +1091,7 @@ export default function DashboardPage() {
                         onChange={(e) => handleMassTogglePreference("notify_telegram", e.target.checked)}
                         className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
                       />
-                      <span>🔔 Telegram Alerts</span>
+                      <span>🔔 Alerts</span>
                     </label>
 
                     <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Enable/Disable Email Forwarding for all">
@@ -1101,7 +1101,7 @@ export default function DashboardPage() {
                         onChange={(e) => handleMassTogglePreference("forward_enabled", e.target.checked)}
                         className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
                       />
-                      <span>📤 Email Forwarding</span>
+                      <span>📤 Forward</span>
                     </label>
                   </div>
                 </div>
