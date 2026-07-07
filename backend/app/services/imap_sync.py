@@ -160,6 +160,7 @@ class IMAPSyncService:
                 has_attachment = self._check_attachments(msg)
 
                 # Create Email record
+                html_body_store, text_body_store = self._get_email_bodies(msg)
                 new_email = Email(
                     mail_account_id=self.account.id,
                     message_id=message_id,
@@ -168,6 +169,8 @@ class IMAPSyncService:
                     from_name=from_name or None,
                     received_at=received_at,
                     snippet=snippet,
+                    body_html=html_body_store,
+                    body_text=text_body_store,
                     has_attachment=has_attachment,
                     is_read=False,  # Read sync is provider-specific; defaults to False
                     notified=False,

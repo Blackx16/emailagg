@@ -159,5 +159,7 @@ async def get_email_details(
         "snippet": email.snippet,
         "has_attachment": email.has_attachment,
         "is_read": email.is_read,
+        "body_html": email.body_html,
+        "body_text": email.body_text,
         "created_at": email.created_at.isoformat() if email.created_at else None
     }

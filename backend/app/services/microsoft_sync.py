@@ -26,7 +26,7 @@ class MicrosoftSyncService:
         url = "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages"
         params = {
             "$top": 50,
-            "$select": "id,subject,from,receivedDateTime,bodyPreview,hasAttachments,isRead",
+            "$select": "id,subject,from,receivedDateTime,bodyPreview,body,hasAttachments,isRead",
             "$orderby": "receivedDateTime desc",
         }
 
@@ -121,6 +121,8 @@ class MicrosoftSyncService:
             from_name=from_name,
             received_at=received_at,
             snippet=msg.get("bodyPreview"),
+            body_html=msg.get("body", {}).get("content") if msg.get("body", {}).get("contentType", "").lower() == "html" else None,
+            body_text=msg.get("body", {}).get("content") if msg.get("body", {}).get("contentType", "").lower() == "text" else None,
             has_attachment=msg.get("hasAttachments", False),
             is_read=msg.get("isRead", False),
             notified=False,

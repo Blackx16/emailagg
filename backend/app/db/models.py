@@ -97,6 +97,8 @@ class Email(Base):
     from_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     snippet: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    body_html: Mapped[str | None] = mapped_column(Text, nullable=True)
+    body_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     has_attachment: Mapped[bool] = mapped_column(Boolean, default=False)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     notified: Mapped[bool] = mapped_column(Boolean, default=False, index=True)

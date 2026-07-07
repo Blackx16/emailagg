@@ -168,7 +168,7 @@ class GmailSyncService:
                 f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{msg_id}"
             )
             detail_params = {
-                "format": "metadata",
+                "format": "full",
                 "metadataHeaders": ["Subject", "From", "Date"],
             }
 
@@ -208,6 +208,7 @@ class GmailSyncService:
                     continue
 
             # Create Email record
+            gmail_body_html, gmail_body_text = self._extract_body(msg_detail)
             new_email = Email(
                 mail_account_id=self.account.id,
                 message_id=msg_id,
@@ -216,6 +217,8 @@ class GmailSyncService:
                 from_name=from_name,
                 received_at=received_at,
                 snippet=msg_detail.get("snippet"),
+                body_html=gmail_body_html,
+                body_text=gmail_body_text,
                 has_attachment=self._has_attachments(msg_detail),
                 is_read="UNREAD" not in msg_detail.get("labelIds", []),
                 notified=False,
@@ -268,6 +271,50 @@ class GmailSyncService:
             return parsedate_to_datetime(date_header)
         except Exception:
             return datetime.now(timezone.utc)
+
+    def _extract_body(self, msg_detail: dict) -> tuple:
+        """Walk MIME tree and extract HTML and plain-text body parts."""
+        import base64
+        html_body = None
+        text_body = None
+
+        def walk(parts):
+            nonlocal html_body, text_body
+            for part in parts:
+                mime = part.get("mimeType", "")
+                sub_parts = part.get("parts", [])
+                if sub_parts:
+                    walk(sub_parts)
+                data = part.get("body", {}).get("data", "")
+                if not data:
+                    continue
+                try:
+                    decoded = base64.urlsafe_b64decode(data + "==").decode("utf-8", errors="replace")
+                except Exception:
+                    continue
+                if mime == "text/html" and not html_body:
+                    html_body = decoded
+                elif mime == "text/plain" and not text_body:
+                    text_body = decoded
+
+        payload = msg_detail.get("payload", {})
+        # Single-part message
+        data = payload.get("body", {}).get("data", "")
+        mime = payload.get("mimeType", "")
+        if data:
+            try:
+                decoded = base64.urlsafe_b64decode(data + "==").decode("utf-8", errors="replace")
+                if mime == "text/html":
+                    html_body = decoded
+                elif mime == "text/plain":
+                    text_body = decoded
+            except Exception:
+                pass
+        # Multi-part message
+        parts = payload.get("parts", [])
+        if parts:
+            walk(parts)
+        return html_body, text_body
 
     def _has_attachments(self, msg_detail: dict) -> bool:
         payload = msg_detail.get("payload", {})
