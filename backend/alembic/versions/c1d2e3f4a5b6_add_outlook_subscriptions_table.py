@@ -18,12 +18,7 @@ depends_on: Union[str, None] = None
 
 
 def upgrade() -> None:
-    # Create the Postgres ENUM type explicitly (required before the column can reference it)
-    outlook_subscription_status_enum = sa.Enum(
-        "active", "expired", "failed", "cancelled",
-        name="outlook_subscription_status_enum",
-    )
-    outlook_subscription_status_enum.create(op.get_bind(), checkfirst=True)
+    op.execute("DROP TYPE IF EXISTS outlook_subscription_status_enum CASCADE")
 
     op.create_table(
         "outlook_subscriptions",
