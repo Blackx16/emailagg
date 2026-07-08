@@ -50,6 +50,8 @@ interface EmailItem {
   snippet: string | null;
   has_attachment: boolean;
   is_read: boolean;
+  body_html?: string | null;
+  body_text?: string | null;
 }
 
 export default function DashboardPage() {
@@ -109,6 +111,7 @@ export default function DashboardPage() {
   const [selectedEmail, setSelectedEmail] = useState<EmailItem | null>(null);
   const [emailDetailLoading, setEmailDetailLoading] = useState(false);
   const [emailDetail, setEmailDetail] = useState<any | null>(null);
+  const [emailBodyView, setEmailBodyView] = useState<"html" | "text">("html");
   
   // IMAP connect dialog state
   const [showImapDialog, setShowImapDialog] = useState(false);
@@ -500,6 +503,7 @@ export default function DashboardPage() {
     setSelectedEmail(email);
     setEmailDetailLoading(true);
     setEmailDetail(null);
+    setEmailBodyView("html"); // Reset view on new email
     try {
       const details = await apiFetch(`/api/v1/emails/${email.id}`, { token });
       setEmailDetail(details);
@@ -943,7 +947,7 @@ export default function DashboardPage() {
                     )}
                   </div>
 
-                  <div className="p-5 glass-card rounded-2xl text-left border border-slate-900 min-h-[40vh] flex flex-col">
+                  <div className="p-5 glass-card rounded-2xl text-left border border-slate-900 h-[calc(100vh-140px)] overflow-y-auto flex flex-col">
                     {!selectedEmail ? (
                       <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
                         <Mail className="h-8 w-8 text-slate-600 mb-2" />
@@ -955,7 +959,7 @@ export default function DashboardPage() {
                         <p className="text-[10px] text-slate-500">Retrieving full message details...</p>
                       </div>
                     ) : (
-                      <div className="space-y-4 flex-1 flex flex-col">
+                      <div className="space-y-4 flex-1">
                         <div>
                           <span className="text-[9px] uppercase tracking-wider font-black text-cyan-400 bg-cyan-950/50 border border-cyan-900/40 px-1.5 py-0.5 rounded">
                             {accounts.find(a => a.id === selectedEmail.mail_account_id)?.provider || "IMAP"}
@@ -980,10 +984,72 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        <div className="flex-1 text-xs text-slate-300 leading-relaxed overflow-y-auto max-h-[35vh] bg-slate-950/30 border border-slate-900/60 p-3 rounded-xl whitespace-pre-wrap font-sans">
-                          {selectedEmail.snippet}
-                          {"\n\n[Full HTML content and body rendering is managed on the client's mail handler. Aggegated snippets are securely cached inside the multitenant pipeline.]"}
-                        </div>
+                        {/* Body view toggle — only show if we have a body */}
+                        {(emailDetail?.body_html || emailDetail?.body_text) && (
+                          <div className="flex items-center space-x-3 border-b border-slate-800/60 pb-4 mb-2">
+                            <button
+                              onClick={() => setEmailBodyView("html")}
+                              disabled={!emailDetail?.body_html}
+                              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center space-x-2 border cursor-pointer ${
+                                emailBodyView === "html"
+                                  ? "bg-indigo-500/10 border-indigo-500/50 text-indigo-400 shadow-sm"
+                                  : "bg-transparent border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                              }`}
+                            >
+                              <span>🎨</span>
+                              <span>HTML View</span>
+                            </button>
+                            <button
+                              onClick={() => setEmailBodyView("text")}
+                              disabled={!emailDetail?.body_text}
+                              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center space-x-2 border cursor-pointer ${
+                                emailBodyView === "text"
+                                  ? "bg-indigo-500/10 border-indigo-500/50 text-indigo-400 shadow-sm"
+                                  : "bg-transparent border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 disabled:opacity-30 disabled:cursor-not-allowed"
+                              }`}
+                            >
+                              <span>📄</span>
+                              <span>Plain Text</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {/* HTML email rendered in sandboxed iframe */}
+                        {emailDetail?.body_html && emailBodyView === "html" ? (
+                          <div className="rounded-xl overflow-hidden border border-slate-700 bg-white shadow-lg shadow-black/20 mt-2">
+                            <iframe
+                              srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><base target="_blank"><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6;color:#1a1a1a;background:#ffffff;margin:0;padding:24px;}a{color:#0066cc;}img{max-width:100%;height:auto;}*{box-sizing:border-box;}</style></head><body>${emailDetail.body_html.replace(/`/g, '\\`')}</body></html>`}
+                              sandbox="allow-same-origin"
+                              className="w-full"
+                              style={{ border: "none", background: "white", minHeight: "600px" }}
+                              title="Email body"
+                              onLoad={(e) => {
+                                const target = e.target as HTMLIFrameElement;
+                                if (target.contentWindow) {
+                                  try {
+                                    const contentHeight = target.contentWindow.document.documentElement.scrollHeight;
+                                    target.style.height = `${Math.max(600, contentHeight)}px`;
+                                  } catch (err) {
+                                    console.error("Could not resize iframe", err);
+                                  }
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : emailDetail?.body_text && (emailBodyView === "text" || !emailDetail?.body_html) ? (
+                          <div className="text-xs text-slate-300 leading-relaxed bg-slate-950/30 border border-slate-900/60 p-4 rounded-xl whitespace-pre-wrap font-mono mt-2">
+                            {emailDetail.body_text}
+                          </div>
+                        ) : (
+                          <div className="space-y-2 mt-2">
+                            <div className="text-xs text-slate-300 leading-relaxed bg-slate-950/30 border border-slate-900/60 p-3 rounded-xl whitespace-pre-wrap font-sans">
+                              {selectedEmail.snippet || "No preview available."}
+                            </div>
+                            <p className="text-[10px] text-slate-500 italic px-1">
+                              Full email body will be available for newly synced emails.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
