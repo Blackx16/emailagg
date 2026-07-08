@@ -6,7 +6,7 @@ import html
 import httpx
 from datetime import datetime, timezone
 from celery import shared_task
-from sqlalchemy import select
+from sqlalchemy import select, func
 import redis as redis_lib
 
 from app.core.config import settings
@@ -57,12 +57,11 @@ async def _get_effective_limit(db, user_db_id) -> int:
     if not user:
         return 20  # default fallback
 
-    stmt_acc = select(MailAccount).where(
+    stmt_acc = select(func.count()).select_from(MailAccount).where(
         MailAccount.user_id == user_db_id,
         MailAccount.status != "disconnected",
     )
-    res_acc = await db.execute(stmt_acc)
-    active_count = len(res_acc.scalars().all())
+    active_count = await db.scalar(stmt_acc)
 
     floor = max(5, math.ceil(active_count * 0.1))
     return max(user.notification_limit_per_hour, floor)

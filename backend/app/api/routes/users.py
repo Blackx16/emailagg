@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from pydantic import BaseModel
 
 from app.db.session import get_db
@@ -63,12 +63,14 @@ async def get_user_profile(telegram_id: int, db: AsyncSession = Depends(get_db),
     # Count connected accounts
     from app.db.models import MailAccount
 
-    stmt_accounts = select(MailAccount).where(MailAccount.user_id == user.id)
-    res_accounts = await db.execute(stmt_accounts)
-    accounts = res_accounts.scalars().all()
+    stmt_connected = select(func.count()).select_from(MailAccount).where(MailAccount.user_id == user.id)
+    connected_accounts = await db.scalar(stmt_connected)
 
-    connected_accounts = len(accounts)
-    active_accounts = sum(1 for a in accounts if a.status != "disconnected")
+    stmt_active = select(func.count()).select_from(MailAccount).where(
+        MailAccount.user_id == user.id,
+        MailAccount.status != "disconnected"
+    )
+    active_accounts = await db.scalar(stmt_active)
 
     return {
         "plan": user.plan,
@@ -107,12 +109,11 @@ async def get_notification_preferences(
     """Return the user's notification limit and the computed effective floor."""
     from app.db.models import MailAccount
 
-    stmt_acc = select(MailAccount).where(
+    stmt_acc = select(func.count()).select_from(MailAccount).where(
         MailAccount.user_id == current_user.id,
         MailAccount.status != "disconnected",
     )
-    res_acc = await db.execute(stmt_acc)
-    active_count = len(res_acc.scalars().all())
+    active_count = await db.scalar(stmt_acc)
 
     floor = max(5, math.ceil(active_count * 0.1))
     effective = _compute_effective_limit(current_user.notification_limit_per_hour, active_count)
@@ -140,12 +141,11 @@ async def update_notification_preferences(
     if payload.notification_limit_per_hour < 1:
         raise HTTPException(status_code=400, detail="Limit must be at least 1.")
 
-    stmt_acc = select(MailAccount).where(
+    stmt_acc = select(func.count()).select_from(MailAccount).where(
         MailAccount.user_id == current_user.id,
         MailAccount.status != "disconnected",
     )
-    res_acc = await db.execute(stmt_acc)
-    active_count = len(res_acc.scalars().all())
+    active_count = await db.scalar(stmt_acc)
 
     # Persist whatever the user asked for; effective_limit is computed at send time
     stmt_user = select(User).where(User.id == current_user.id)
