@@ -1,3 +1,3 @@
-## 2024-03-24 - [Avoid `len(res.scalars().all())` for Database Counting]
-**Learning:** Loading full SQLAlchemy ORM objects into memory just to count them (`len(res.scalars().all())`) is a major performance bottleneck (effectively an N+1 issue for memory usage). The database is far faster at counting.
-**Action:** Always use SQLAlchemy's `func.count()` (e.g., `select(func.count()).select_from(Model)`) to count database records directly inside the query execution.
+## 2024-05-24 - [Avoid In-Memory List Counting]
+**Learning:** In SQLAlchemy, avoid fetching entire result sets (`res.scalars().all()`) just to compute lengths or counts in Python, as this causes N+1 problems and excessive memory usage.
+**Action:** Use `select(func.count()).select_from(Model)` directly in the database to count records optimally, adhering to the project's explicit performance guidelines.
