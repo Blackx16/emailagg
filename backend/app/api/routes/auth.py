@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+import html
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
@@ -245,6 +246,9 @@ async def register_oauth_account(
     except Exception:
         pass  # Don't fail the OAuth flow if notification fails
 
+    safe_provider = html.escape(provider.capitalize())
+    safe_email = html.escape(email)
+
     return HTMLResponse(
         content=f"""
     <!DOCTYPE html>
@@ -277,7 +281,7 @@ async def register_oauth_account(
     <body>
         <div class="card">
             <h1>Success!</h1>
-            <p>Your {provider.capitalize()} account (<span class="email">{email}</span>) has been connected successfully.</p>
+            <p>Your {safe_provider} account (<span class="email">{safe_email}</span>) has been connected successfully.</p>
             <p>You can close this window now and return to your Telegram bot.</p>
         </div>
     </body>
