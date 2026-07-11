@@ -105,19 +105,21 @@ async def process_outlook_notification(self, subscription_id: str, message_id: s
 @async_to_sync
 async def renew_expiring_outlook_subscriptions(self):
     """
-    Beat task to renew Graph subscriptions before they expire.
+    Beat task to renew Graph subscriptions before they expire, or recreate if expired.
     """
     now = datetime.now(timezone.utc)
     renewal_window = now + timedelta(hours=24)
     renewed = 0
     failed = 0
+    recreated = 0
     
     async with AsyncSessionLocal() as db:
-        # Find subscriptions expiring within 24h OR that are in 'failed' state
+        # Find subscriptions expiring within 24h OR that are in 'failed' or 'expired' state
         stmt = select(OutlookSubscription).where(
             or_(
                 and_(OutlookSubscription.status == "active", OutlookSubscription.expiration_datetime <= renewal_window),
                 OutlookSubscription.status == "failed",
+                OutlookSubscription.status == "expired",
             )
         )
         result = await db.execute(stmt)
@@ -125,6 +127,8 @@ async def renew_expiring_outlook_subscriptions(self):
         
         if not subs:
             return
+
+        from app.services.outlook_subscription_service import create_subscription
 
         for sub in subs:
             stmt_acc = select(MailAccount).where(MailAccount.id == sub.mail_account_id)
@@ -136,6 +140,21 @@ async def renew_expiring_outlook_subscriptions(self):
                 continue
                 
             try:
+                # If it's already expired, don't patch, just recreate
+                if sub.status == "expired":
+                    logger.info("Recreating expired subscription for account %s", account.id)
+                    new_sub = await create_subscription(account, db)
+                    if new_sub:
+                        # The create_subscription creates a new row, we can cancel/delete the old one
+                        await db.delete(sub)
+                        await db.commit()
+                        recreated += 1
+                    else:
+                        sub.last_error = "Failed to recreate subscription"
+                        await db.commit()
+                        failed += 1
+                    continue
+
                 access_token = await get_valid_access_token(account, db)
                 new_expiry = datetime.now(timezone.utc) + timedelta(minutes=4200)
                 
@@ -148,19 +167,29 @@ async def renew_expiring_outlook_subscriptions(self):
                     )
                     
                 if resp.status_code == 404:
-                    sub.status = "expired"
-                    sub.last_error = "Graph returned 404 on renewal — subscription no longer exists"
+                    logger.info("Graph 404 on renewal for %s, attempting recreation", account.id)
+                    new_sub = await create_subscription(account, db)
+                    if new_sub:
+                        await db.delete(sub)
+                        await db.commit()
+                        recreated += 1
+                    else:
+                        sub.status = "expired"
+                        sub.last_error = "Graph returned 404 on renewal and recreation failed"
+                        await db.commit()
+                        failed += 1
                 elif resp.status_code == 200:
                     sub.expiration_datetime = new_expiry
                     sub.renewed_at = datetime.now(timezone.utc)
                     sub.last_error = None
                     sub.status = "active"
                     renewed += 1
+                    await db.commit()
                 else:
-                    sub.last_error = f"HTTP {resp.status_code}"
+                    sub.last_error = f"HTTP {resp.status_code}: {resp.text}"
                     sub.status = "failed"
                     failed += 1
-                await db.commit()
+                    await db.commit()
             except Exception as e:
                 sub.last_error = str(e)[:500]
                 sub.status = "failed"
@@ -172,5 +201,5 @@ async def renew_expiring_outlook_subscriptions(self):
             db=db, 
             service="worker_outlook_webhooks", 
             event_type="Subscription Renewal Batch",
-            metadata_payload={"total": len(subs), "renewed": renewed, "failed": failed},
+            metadata_payload={"total": len(subs), "renewed": renewed, "recreated": recreated, "failed": failed},
         )
