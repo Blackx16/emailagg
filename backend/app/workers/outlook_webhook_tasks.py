@@ -67,27 +67,41 @@ async def process_outlook_notification(self, subscription_id: str, message_id: s
             logger.error("Failed to get access token for account %s: %s", account.id, e)
             raise self.retry(exc=e)
 
+import os
+
         # Fetch the specific message from Graph
-        url = f"https://graph.microsoft.com/v1.0/me/messages/{message_id}"
-        params = {
-            "$select": "id,subject,from,receivedDateTime,bodyPreview,hasAttachments,isRead"
-        }
-        
-        transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
-        async with httpx.AsyncClient(transport=transport, timeout=30.0) as client:
-            resp = await client.get(
-                url,
-                params=params,
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
+        if os.getenv('STRESS_TEST_MODE') == '1':
+            logger.info("STRESS TEST MODE: Bypassing Graph API fetch for %s", message_id)
+            msg = {
+                "id": message_id,
+                "subject": f"Stress Test {message_id}",
+                "from": {"emailAddress": {"address": "stress@test.com", "name": "Stress Test"}},
+                "receivedDateTime": datetime.now(timezone.utc).isoformat(),
+                "bodyPreview": "Stress test body...",
+                "hasAttachments": False,
+                "isRead": False
+            }
+        else:
+            url = f"https://graph.microsoft.com/v1.0/me/messages/{message_id}"
+            params = {
+                "$select": "id,subject,from,receivedDateTime,bodyPreview,hasAttachments,isRead"
+            }
+            
+            transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+            async with httpx.AsyncClient(transport=transport, timeout=30.0) as client:
+                resp = await client.get(
+                    url,
+                    params=params,
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
 
-            if resp.status_code == 404:
-                logger.info("Message %s not found (likely deleted before processing).", message_id)
-                return
-            elif resp.status_code != 200:
-                raise ValueError(f"Graph API fetch failed: HTTP {resp.status_code}")
+                if resp.status_code == 404:
+                    logger.info("Message %s not found (likely deleted before processing).", message_id)
+                    return
+                elif resp.status_code != 200:
+                    raise ValueError(f"Graph API fetch failed: HTTP {resp.status_code}")
 
-            msg = resp.json()
+                msg = resp.json()
 
         # Reuse existing sync logic to handle dedup, notifications, and forwarding
         service = MicrosoftSyncService(account, db)
