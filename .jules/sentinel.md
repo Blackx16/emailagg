@@ -7,3 +7,8 @@
 **Vulnerability:** XSS vulnerability in OAuth callback where `provider` and `email` were interpolated directly into the `HTMLResponse` template without sanitization.
 **Learning:** External variables (such as those returned from OAuth providers) must be treated as untrusted input.
 **Prevention:** Always sanitize variables using `html.escape()` before interpolating them into HTML strings.
+
+## 2025-02-27 - [Fix Missing null coercion in hmac comparison]
+**Vulnerability:** In Python, passing `None` to `hmac.compare_digest` raises a `TypeError`. Forms and requests with missing fields can evaluate to `None`, resulting in 500 errors.
+**Learning:** Always coalesce potentially missing inputs (like `password or ""`) before passing them to `hmac.compare_digest` to ensure safe operation.
+**Prevention:** Ensure that values passed to `hmac.compare_digest` are guaranteed to be strings or bytes, using a fallback value if they are not explicitly typed as required.

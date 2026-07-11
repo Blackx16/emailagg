@@ -1,3 +1,4 @@
+import hmac
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -76,7 +77,7 @@ async def basic_auth_middleware(request: Request, call_next):
             if scheme.lower() == "basic":
                 decoded = base64.b64decode(credentials).decode("ascii")
                 username, password = decoded.split(":", 1)
-                if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+                if hmac.compare_digest(username or "", ADMIN_USERNAME) and hmac.compare_digest(password or "", ADMIN_PASSWORD):
                     request.scope["user"] = SimpleUser(username)
                     return await call_next(request)
         except Exception as e:
@@ -305,7 +306,7 @@ async def login_post(request: Request):
     username = form.get("username")
     password = form.get("password")
 
-    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+    if hmac.compare_digest(username or "", ADMIN_USERNAME) and hmac.compare_digest(password or "", ADMIN_PASSWORD):
         response = RedirectResponse(url=request.url_for("read_root"), status_code=303)
         return response
     else:
@@ -496,7 +497,7 @@ async def websocket_terminal(websocket: WebSocket, container_name: str, auth: st
     try:
         decoded = base64.b64decode(auth).decode("ascii")
         username, password = decoded.split(":", 1)
-        if username != ADMIN_USERNAME or password != ADMIN_PASSWORD:
+        if not (hmac.compare_digest(username or "", ADMIN_USERNAME) and hmac.compare_digest(password or "", ADMIN_PASSWORD)):
             await websocket.close(code=1008, reason="Invalid credentials")
             return
     except Exception:
