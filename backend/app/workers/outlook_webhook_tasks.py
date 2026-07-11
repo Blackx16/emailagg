@@ -1,3 +1,4 @@
+import os
 import logging
 import httpx
 from datetime import datetime, timezone, timedelta
@@ -67,7 +68,6 @@ async def process_outlook_notification(self, subscription_id: str, message_id: s
             logger.error("Failed to get access token for account %s: %s", account.id, e)
             raise self.retry(exc=e)
 
-import os
 
         # Fetch the specific message from Graph
         if os.getenv('STRESS_TEST_MODE') == '1':
