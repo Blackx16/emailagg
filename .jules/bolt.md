@@ -1,3 +1,6 @@
-## 2024-03-24 - [Avoid `len(res.scalars().all())` for Database Counting]
-**Learning:** Loading full SQLAlchemy ORM objects into memory just to count them (`len(res.scalars().all())`) is a major performance bottleneck (effectively an N+1 issue for memory usage). The database is far faster at counting.
-**Action:** Always use SQLAlchemy's `func.count()` (e.g., `select(func.count()).select_from(Model)`) to count database records directly inside the query execution.
+## 2024-07-10 - Preventing O(N) memory load in IMAP Sync
+**Learning:** Loading all message IDs for an account into memory (`existing_result.scalars().all()`) to deduplicate a small batch of incoming IMAP emails causes a massive memory leak (O(N) memory, where N is all emails).
+**Action:** Extract headers for the current batch first, then perform a single bulk query with an `IN` clause to fetch only relevant existing message IDs, reducing memory footprint to O(1) regarding total account size.
+## 2024-07-10 - Preventing N+1-like memory inflation using func.count()
+**Learning:** Loading all related ORM objects into memory to calculate counts (e.g., `sum(1 for a in accounts)`) or find a single record is a performance anti-pattern that leads to O(N) memory inflation as user data grows.
+**Action:** Always delegate counting and existence checks to the database using targeted `select` queries and `func.count()`.

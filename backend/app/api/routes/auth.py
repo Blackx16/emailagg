@@ -4,7 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from app.db.session import get_db
 from app.db.models import User, MailAccount
@@ -111,18 +111,23 @@ async def connect_imap(
     db: AsyncSession = Depends(get_db)
 ):
     """Connect a custom IMAP mail account."""
-    # 1. Retrieve user's existing accounts
-    stmt_accounts = select(MailAccount).where(MailAccount.user_id == current_user.id)
-    result_accounts = await db.execute(stmt_accounts)
-    accounts = result_accounts.scalars().all()
-
-    # 2. Check if this account is already registered for this user
-    existing_account = next(
-        (a for a in accounts if a.provider == "imap" and a.email == payload.email), None
+    # 1. Check if this account is already registered for this user
+    stmt_existing = select(MailAccount).where(
+        MailAccount.user_id == current_user.id,
+        MailAccount.provider == "imap",
+        MailAccount.email == payload.email
     )
+    result_existing = await db.execute(stmt_existing)
+    existing_account = result_existing.scalar_one_or_none()
 
     if not existing_account:
-        active_accounts_count = sum(1 for a in accounts if a.status != "disconnected")
+        # Check active accounts count directly using func.count() to avoid loading all ORM objects
+        stmt_count = select(func.count()).select_from(MailAccount).where(
+            MailAccount.user_id == current_user.id,
+            MailAccount.status != "disconnected"
+        )
+        active_accounts_count = (await db.execute(stmt_count)).scalar_one()
+
         if active_accounts_count >= current_user.max_accounts:
             raise HTTPException(
                 status_code=403,
