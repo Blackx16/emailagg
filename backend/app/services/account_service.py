@@ -1,7 +1,7 @@
 from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.db.models import User, MailAccount
 from app.core.encryption import encrypt_token
 from app.services.outlook_subscription_service import cancel_subscription
@@ -29,18 +29,23 @@ async def find_or_create_oauth_account(
         db.add(user)
         await db.flush()  # Populate user.id
 
-    # Retrieve existing connected accounts
-    stmt_accounts = select(MailAccount).where(MailAccount.user_id == user.id)
-    result_accounts = await db.execute(stmt_accounts)
-    accounts = result_accounts.scalars().all()
-
-    # Check if this account is already registered for this user
-    existing_account = next(
-        (a for a in accounts if a.provider == provider and a.email == email), None
+    # ⚡ Bolt Optimization: Query specifically for the existing account instead of loading all accounts into memory
+    stmt_existing = select(MailAccount).where(
+        MailAccount.user_id == user.id,
+        MailAccount.provider == provider,
+        MailAccount.email == email
     )
+    result_existing = await db.execute(stmt_existing)
+    existing_account = result_existing.scalar_one_or_none()
 
     if not existing_account:
-        active_accounts_count = sum(1 for a in accounts if a.status != "disconnected")
+        # ⚡ Bolt Optimization: Use func.count() at the DB level instead of in-memory sum(...) over all loaded rows
+        stmt_count = select(func.count()).select_from(MailAccount).where(
+            MailAccount.user_id == user.id,
+            MailAccount.status != "disconnected"
+        )
+        active_accounts_count = await db.scalar(stmt_count)
+
         if active_accounts_count >= user.max_accounts:
             raise HTTPException(
                 status_code=403,
