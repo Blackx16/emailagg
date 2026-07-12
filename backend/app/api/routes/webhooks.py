@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import logging
 from fastapi import APIRouter, HTTPException, Request, Header, Query, Response, BackgroundTasks
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import select
 from app.db.session import AsyncSessionLocal
 from app.db.models import OutlookSubscription
@@ -222,6 +223,6 @@ async def outlook_webhook(
             continue
 
         # Enqueue the task with client_state included
-        process_outlook_notification.delay(sub_id, message_id, client_state)
+        await run_in_threadpool(process_outlook_notification.delay, sub_id, message_id, client_state)
 
     return Response(status_code=202)
