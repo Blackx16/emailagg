@@ -74,42 +74,64 @@ class IMAPSyncService:
             user_result = await self.db.execute(stmt)
             telegram_id = user_result.scalar_one()
 
-            # Pre-fetch existing message IDs to avoid N+1 queries during deduplication
-            stmt_existing = select(Email.message_id).where(Email.mail_account_id == self.account.id)
-            existing_result = await self.db.execute(stmt_existing)
-            existing_message_ids = set(existing_result.scalars().all())
+            # ⚡ Bolt Optimization: Fetch headers in a first pass to build a bounded IN query
+            # instead of loading ALL account message IDs into memory.
+            batch_message_ids = []
+            uid_to_msg_id = {}
+            for uid_bytes_hdr in uids:
+                uid_hdr = uid_bytes_hdr.decode()
+
+                # 1. Fetch headers first to retrieve Message-ID for deduplication
+                header_resp_hdr = await imap_client.uid(
+                    "fetch", uid_hdr, "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])"
+                )
+                if header_resp_hdr.result != "OK":
+                    logger.error(f"Failed to fetch IMAP headers for UID {uid_hdr}")
+                    continue
+
+                raw_header_val = None
+                for line_hdr in header_resp_hdr.lines:
+                    if not line_hdr.startswith(b"*") and line_hdr != b")" and len(line_hdr) > 0:
+                        raw_header_val = line_hdr
+                        break
+
+                message_id_val = None
+                if raw_header_val:
+                    header_msg_val = email.message_from_bytes(raw_header_val)
+                    message_id_val = header_msg_val.get("Message-ID")
+
+                # Fallback unique identifier if Message-ID is missing
+                if not message_id_val:
+                    message_id_val = f"imap-uid-{uid_hdr}"
+                else:
+                    message_id_val = message_id_val.strip()
+
+                batch_message_ids.append(message_id_val)
+                uid_to_msg_id[uid_hdr] = message_id_val
+
+            existing_message_ids = set()
+            if batch_message_ids:
+                # Batch IN query to avoid SQLite limit of 32766 parameters
+                chunk_size = 900
+                for i in range(0, len(batch_message_ids), chunk_size):
+                    chunk = batch_message_ids[i:i + chunk_size]
+                    stmt_existing = select(Email.message_id).where(
+                        Email.mail_account_id == self.account.id,
+                        Email.message_id.in_(chunk)
+                    )
+                    existing_result = await self.db.execute(stmt_existing)
+                    existing_message_ids.update(existing_result.scalars().all())
 
             new_emails_count = 0
             # Sync oldest emails first to maintain chronological notification order
             for uid_bytes in uids:
                 uid = uid_bytes.decode()
 
-                # 1. Fetch headers first to retrieve Message-ID for deduplication
-                header_resp = await imap_client.uid(
-                    "fetch", uid, "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])"
-                )
-                if header_resp.result != "OK":
-                    logger.error(f"Failed to fetch IMAP headers for UID {uid}")
+                message_id = uid_to_msg_id.get(uid)
+                if not message_id:
                     continue
 
-                raw_header = None
-                for line in header_resp.lines:
-                    if not line.startswith(b"*") and line != b")" and len(line) > 0:
-                        raw_header = line
-                        break
-
-                message_id = None
-                if raw_header:
-                    header_msg = email.message_from_bytes(raw_header)
-                    message_id = header_msg.get("Message-ID")
-
-                # Fallback unique identifier if Message-ID is missing
-                if not message_id:
-                    message_id = f"imap-uid-{uid}"
-                else:
-                    message_id = message_id.strip()
-
-                # Deduplicate using the pre-fetched message IDs
+                # Deduplicate using the bounded pre-fetched message IDs
                 if message_id in existing_message_ids:
                     continue
 
