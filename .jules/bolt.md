@@ -4,3 +4,6 @@
 ## 2024-07-10 - Preventing N+1-like memory inflation using func.count()
 **Learning:** Loading all related ORM objects into memory to calculate counts (e.g., `sum(1 for a in accounts)`) or find a single record is a performance anti-pattern that leads to O(N) memory inflation as user data grows.
 **Action:** Always delegate counting and existence checks to the database using targeted `select` queries and `func.count()`.
+## 2026-06-25 - IMAP Sync O(N) Memory Leak Prevention
+**Learning:** Found a major performance bottleneck where `IMAPSyncService` loaded ALL existing database emails for an account (`len(existing_result.scalars().all())`) into memory just to prevent an N+1 deduplication issue.
+**Action:** When deduplicating large collections, use a two-pass chunked approach: first gather incoming IDs, then perform bounded `IN` queries to fetch only the existing IDs relevant to the current batch. This stops memory utilization from growing O(N) over time.
