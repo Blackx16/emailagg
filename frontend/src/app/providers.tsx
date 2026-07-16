@@ -12,9 +12,11 @@ if (typeof window !== 'undefined') {
   // reaches pageviews, autocapture, or session recording metadata.
   stripTelegramLaunchParamsFromLocation()
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY || 'phc_yMbzeXj5PXsGTpU7dAzcuf3vJbmhuRLqa8raFfwcCkZm', {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://teleforward-analytics.emaargroup.org',
     person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
     capture_pageview: false, // Disable automatic pageview capture, as we capture manually
+    autocapture: true, // Explicitly enable autocapture for bounce rate
+    capture_pageleave: true, // Explicitly enable pageleave capture for bounce rate
     // Defense-in-depth: redact the launch payload from URL properties on every event.
     before_send: scrubTelegramLaunchPayload,
   })
