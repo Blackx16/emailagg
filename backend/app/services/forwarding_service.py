@@ -4,6 +4,7 @@ import uuid
 import base64
 import httpx
 import aiosmtplib
+import html
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -242,16 +243,22 @@ def _build_forwarding_content(
     # 2. Build HTML version of forwarding headers and body (if HTML body is available)
     html_content = None
     if html_body:
+        safe_email = html.escape(account.email or "unknown@domain.com")
+        safe_from_name = html.escape(email.from_name or "Unknown")
+        safe_from_email = html.escape(email.from_email or "unknown@domain.com")
+        safe_subject = html.escape(email.subject or "(No Subject)")
+
         html_header = (
             f"<div style='font-family: Arial, sans-serif; font-size: 14px; color: #333; "
             f"border-left: 3px solid #ccc; padding-left: 10px; margin-bottom: 20px; line-height: 1.5;'>"
-            f"<b>---------- Forwarded from {account.email} via EmailAgg ----------</b><br>"
-            f"<b>From:</b> {email.from_name or 'Unknown'} &lt;{email.from_email or 'unknown@domain.com'}&gt;<br>"
+            f"<b>---------- Forwarded from {safe_email} via EmailAgg ----------</b><br>"
+            f"<b>From:</b> {safe_from_name} &lt;{safe_from_email}&gt;<br>"
             f"<b>Date:</b> {email.received_at.isoformat() if email.received_at else 'Unknown'}<br>"
-            f"<b>Subject:</b> {email.subject or '(No Subject)'}<br>"
+            f"<b>Subject:</b> {safe_subject}<br>"
         )
         if otp:
-            html_header += f"<b>Extracted OTP Code:</b> <span style='font-size: 16px; font-weight: bold; color: #d93025;'>{otp}</span><br>"
+            safe_otp = html.escape(otp)
+            html_header += f"<b>Extracted OTP Code:</b> <span style='font-size: 16px; font-weight: bold; color: #d93025;'>{safe_otp}</span><br>"
         html_header += "</div><br>"
         html_content = html_header + html_body
 
