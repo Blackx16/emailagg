@@ -74,17 +74,10 @@ class IMAPSyncService:
             user_result = await self.db.execute(stmt)
             telegram_id = user_result.scalar_one()
 
-            # Pre-fetch existing message IDs to avoid N+1 queries during deduplication
-            stmt_existing = select(Email.message_id).where(Email.mail_account_id == self.account.id)
-            existing_result = await self.db.execute(stmt_existing)
-            existing_message_ids = set(existing_result.scalars().all())
-
-            new_emails_count = 0
-            # Sync oldest emails first to maintain chronological notification order
+            # 1. First pass: Fetch headers to retrieve Message-IDs for all UIDs to avoid N+1 and O(N) memory leak
+            uid_to_msg_id = {}
             for uid_bytes in uids:
                 uid = uid_bytes.decode()
-
-                # 1. Fetch headers first to retrieve Message-ID for deduplication
                 header_resp = await imap_client.uid(
                     "fetch", uid, "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])"
                 )
@@ -103,13 +96,33 @@ class IMAPSyncService:
                     header_msg = email.message_from_bytes(raw_header)
                     message_id = header_msg.get("Message-ID")
 
-                # Fallback unique identifier if Message-ID is missing
                 if not message_id:
                     message_id = f"imap-uid-{uid}"
                 else:
                     message_id = message_id.strip()
 
-                # Deduplicate using the pre-fetched message IDs
+                uid_to_msg_id[uid] = message_id
+
+            # Pre-fetch ONLY the relevant existing message IDs using a bounded IN query
+            existing_message_ids = set()
+            if uid_to_msg_id:
+                stmt_existing = select(Email.message_id).where(
+                    Email.mail_account_id == self.account.id,
+                    Email.message_id.in_(list(uid_to_msg_id.values()))
+                )
+                existing_result = await self.db.execute(stmt_existing)
+                existing_message_ids = set(existing_result.scalars().all())
+
+            new_emails_count = 0
+            # Sync oldest emails first to maintain chronological notification order
+            for uid_bytes in uids:
+                uid = uid_bytes.decode()
+                if uid not in uid_to_msg_id:
+                    continue
+
+                message_id = uid_to_msg_id[uid]
+
+                # Deduplicate using the pre-fetched relevant message IDs
                 if message_id in existing_message_ids:
                     continue
 
