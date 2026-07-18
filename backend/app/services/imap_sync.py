@@ -74,17 +74,10 @@ class IMAPSyncService:
             user_result = await self.db.execute(stmt)
             telegram_id = user_result.scalar_one()
 
-            # Pre-fetch existing message IDs to avoid N+1 queries during deduplication
-            stmt_existing = select(Email.message_id).where(Email.mail_account_id == self.account.id)
-            existing_result = await self.db.execute(stmt_existing)
-            existing_message_ids = set(existing_result.scalars().all())
-
-            new_emails_count = 0
-            # Sync oldest emails first to maintain chronological notification order
+            # 1. First pass: Fetch headers to extract Message-IDs for the chunk to prevent O(N) memory leak
+            uid_to_msg_id = {}
             for uid_bytes in uids:
                 uid = uid_bytes.decode()
-
-                # 1. Fetch headers first to retrieve Message-ID for deduplication
                 header_resp = await imap_client.uid(
                     "fetch", uid, "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])"
                 )
@@ -103,11 +96,31 @@ class IMAPSyncService:
                     header_msg = email.message_from_bytes(raw_header)
                     message_id = header_msg.get("Message-ID")
 
-                # Fallback unique identifier if Message-ID is missing
                 if not message_id:
                     message_id = f"imap-uid-{uid}"
                 else:
                     message_id = message_id.strip()
+
+                uid_to_msg_id[uid] = message_id
+
+            # Pre-fetch existing message IDs for just this chunk to avoid N+1 queries and O(N) memory leak
+            existing_message_ids = set()
+            if uid_to_msg_id:
+                stmt_existing = select(Email.message_id).where(
+                    Email.mail_account_id == self.account.id,
+                    Email.message_id.in_(list(uid_to_msg_id.values()))
+                )
+                existing_result = await self.db.execute(stmt_existing)
+                existing_message_ids = set(existing_result.scalars().all())
+
+            new_emails_count = 0
+            # 2. Second pass: Fetch full emails for those not in db. Sync oldest emails first to maintain chronological notification order
+            for uid_bytes in uids:
+                uid = uid_bytes.decode()
+                if uid not in uid_to_msg_id:
+                    continue
+
+                message_id = uid_to_msg_id[uid]
 
                 # Deduplicate using the pre-fetched message IDs
                 if message_id in existing_message_ids:
@@ -116,7 +129,7 @@ class IMAPSyncService:
                 # Add it to the set to prevent in-batch duplicates
                 existing_message_ids.add(message_id)
 
-                # 2. Fetch full raw email bytes (use PEEK to avoid marking it read)
+                # Fetch full raw email bytes (use PEEK to avoid marking it read)
                 fetch_resp = await imap_client.uid("fetch", uid, "BODY.PEEK[]")
                 if fetch_resp.result != "OK":
                     logger.error(f"Failed to fetch full IMAP email for UID {uid}")
