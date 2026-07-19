@@ -24,7 +24,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
-  Sliders
+  Sliders,
+  Activity,
+  BellRing,
+  SlidersHorizontal
 } from "lucide-react";
 
 interface Account {
@@ -1063,116 +1066,131 @@ export default function DashboardPage() {
         {!dataLoading && activeTab === "mailboxes" && (
           <div className="space-y-6">
             
-            {/* Accounts limits panel */}
-            <div className="p-4 rounded-2xl glass border border-slate-900 flex items-center justify-between text-left">
-              <div className="space-y-1">
-                <h3 className="text-xs font-bold text-white">Active Limit Tracking</h3>
-                <p className="text-[10px] text-slate-400">
-                  Plan boundaries are governed by your subscription plan.
-                </p>
-              </div>
-              <div className="text-right">
-                <span className="text-lg font-black text-white">
-                  {accounts.filter(a => a.status !== "disconnected").length}
-                </span>
-                <span className="text-xs text-slate-500 font-bold">
-                  {" "}/ {user.plan === "free" ? 3 : user.plan === "pro" ? 25 : 100}
-                </span>
-              </div>
-            </div>
-
-            {/* Notification Throttle Panel */}
-            <div className="p-4 rounded-2xl glass border border-slate-900 text-left space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="space-y-0.5">
-                  <h3 className="text-xs font-bold text-white">🔔 Notification Limit</h3>
-                  <p className="text-[10px] text-slate-400 leading-relaxed max-w-xs">
-                    Max Telegram alerts per hour. Floor is automatically set to{" "}
-                    <span className="text-indigo-400 font-bold">{notifLimitFloor}/hr</span>{" "}
-                    based on your {accounts.filter(a => a.status !== "disconnected").length} accounts.
+            {/* Global Settings & Controls Panel */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 mb-2 rounded-2xl glass border border-slate-900 divide-y lg:divide-y-0 lg:divide-x divide-slate-800/50 shadow-md">
+              
+              {/* Accounts limits */}
+              <div className="flex flex-col justify-between text-left p-5">
+                <div className="space-y-1 mb-4">
+                  <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Activity className="h-3.5 w-3.5 text-slate-400" />
+                    Limit Tracking
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    Plan boundaries governed by subscription.
                   </p>
                 </div>
-                <span className="text-[10px] text-slate-500 bg-slate-900 border border-slate-800 px-2 py-1 rounded-lg shrink-0">
-                  effective: <b className="text-indigo-400">{notifLimitEffective}/hr</b>
-                </span>
+                <div className="flex items-end justify-between mt-auto">
+                  <span className="text-2xl font-black text-white leading-none tracking-tight">
+                    {accounts.filter(a => a.status !== "disconnected").length}
+                  </span>
+                  <span className="text-xs text-slate-500 font-bold mb-0.5">
+                    / {user.plan === "free" ? 3 : user.plan === "pro" ? 25 : 100} limit
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="number"
-                  min={1}
-                  value={notifLimitInput}
-                  onChange={(e) => setNotifLimitInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && saveNotifLimit()}
-                  className="w-20 px-2.5 py-1.5 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-center"
-                />
-                <span className="text-[10px] text-slate-400">per hour</span>
-                <button
-                  onClick={saveNotifLimit}
-                  disabled={notifLimitSaving}
-                  className="px-3 py-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-600 text-white text-[10px] font-semibold transition cursor-pointer disabled:opacity-50"
-                >
-                  {notifLimitSaving ? "Saving…" : "Save"}
-                </button>
-                {parseInt(notifLimitInput) < notifLimitFloor && (
-                  <span className="text-[9px] text-amber-400">⚠ Floor enforced ({notifLimitFloor}/hr)</span>
-                )}
+
+              {/* Notification Throttle */}
+              <div className="flex flex-col text-left p-5 space-y-3 justify-between">
+                <div>
+                  <div className="flex items-start justify-between mb-1">
+                    <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <BellRing className="h-3.5 w-3.5 text-slate-400" />
+                      Throttle
+                    </h3>
+                    <span className="text-[9px] text-slate-500 bg-slate-900/50 border border-slate-800/50 px-1.5 py-0.5 rounded shrink-0 ml-2">
+                      <b className="text-indigo-400">{notifLimitEffective}</b>/hr effective
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Max Telegram alerts. Floor is <span className="text-indigo-400 font-bold">{notifLimitFloor}/hr</span>.
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2 mt-auto pt-2">
+                  <input
+                    type="number"
+                    min={1}
+                    value={notifLimitInput}
+                    onChange={(e) => setNotifLimitInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveNotifLimit()}
+                    className="w-16 px-2 py-1.5 text-xs bg-slate-950/50 border border-slate-800/80 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-center shadow-inner"
+                  />
+                  <button
+                    onClick={saveNotifLimit}
+                    disabled={notifLimitSaving}
+                    className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 text-[10px] font-semibold transition cursor-pointer disabled:opacity-50"
+                  >
+                    {notifLimitSaving ? "..." : "Save"}
+                  </button>
+                  {parseInt(notifLimitInput) < notifLimitFloor && (
+                    <span className="text-[9px] text-amber-400/80 ml-auto flex items-center"><AlertCircle className="w-3 h-3 mr-0.5"/> Floor</span>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Mass Controls Panel */}
-            {(() => {
-              const activeAccounts = accounts.filter(a => a.status !== "disconnected");
-              if (activeAccounts.length === 0) return null;
-              
-              const allDashEnabled = activeAccounts.every(a => a.deliver_to_dashboard);
-              const allAlertsEnabled = activeAccounts.every(a => a.notify_telegram);
-              const allForwardEnabled = activeAccounts.every(a => a.forward_enabled);
+              {/* Mass Controls */}
+              {(() => {
+                const activeAccounts = accounts.filter(a => a.status !== "disconnected");
+                if (activeAccounts.length === 0) return (
+                  <div className="flex flex-col text-left p-5 opacity-40">
+                     <h3 className="text-xs font-bold text-white flex items-center gap-1.5 mb-1">
+                        <SlidersHorizontal className="h-3.5 w-3.5 text-slate-400" />
+                        Mass Controls
+                     </h3>
+                     <p className="text-[10px] text-slate-400">No active mailboxes.</p>
+                  </div>
+                );
+                
+                const allDashEnabled = activeAccounts.every(a => a.deliver_to_dashboard);
+                const allAlertsEnabled = activeAccounts.every(a => a.notify_telegram);
+                const allForwardEnabled = activeAccounts.every(a => a.forward_enabled);
 
-              return (
-                <div className="p-4 rounded-2xl glass border border-slate-900 text-left space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-0.5">
-                      <h3 className="text-xs font-bold text-white">🎛️ Mass Controls</h3>
-                      <p className="text-[10px] text-slate-400 leading-relaxed max-w-xs">
-                        Apply preferences to all active mailboxes at once.
+                return (
+                  <div className="flex flex-col text-left p-5 justify-between">
+                    <div>
+                      <h3 className="text-xs font-bold text-white flex items-center gap-1.5 mb-1">
+                        <SlidersHorizontal className="h-3.5 w-3.5 text-slate-400" />
+                        Mass Controls
+                      </h3>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">
+                        Apply preferences to all active mailboxes.
                       </p>
                     </div>
-                  </div>
-                  
-                  <div className="pt-2 grid grid-cols-3 gap-1.5 text-[9px] font-semibold text-slate-400">
-                    <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Enable/Disable Dash Delivery for all">
-                      <input
-                        type="checkbox"
-                        checked={allDashEnabled}
-                        onChange={(e) => handleMassTogglePreference("deliver_to_dashboard", e.target.checked)}
-                        className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
-                      />
-                      <span>📬 Dash</span>
-                    </label>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[9px] font-semibold text-slate-400 mt-3 pt-3 border-t border-slate-800/30">
+                      <label className="flex items-center space-x-1.5 cursor-pointer select-none group" title="Dash Delivery for all">
+                        <input
+                          type="checkbox"
+                          checked={allDashEnabled}
+                          onChange={(e) => handleMassTogglePreference("deliver_to_dashboard", e.target.checked)}
+                          className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                        />
+                        <span className="group-hover:text-slate-300 transition-colors">📬 Dash</span>
+                      </label>
 
-                    <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Enable/Disable Telegram Alerts for all">
-                      <input
-                        type="checkbox"
-                        checked={allAlertsEnabled}
-                        onChange={(e) => handleMassTogglePreference("notify_telegram", e.target.checked)}
-                        className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
-                      />
-                      <span>🔔 Alerts</span>
-                    </label>
+                      <label className="flex items-center space-x-1.5 cursor-pointer select-none group" title="Telegram Alerts for all">
+                        <input
+                          type="checkbox"
+                          checked={allAlertsEnabled}
+                          onChange={(e) => handleMassTogglePreference("notify_telegram", e.target.checked)}
+                          className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                        />
+                        <span className="group-hover:text-slate-300 transition-colors">🔔 Alerts</span>
+                      </label>
 
-                    <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Enable/Disable Email Forwarding for all">
-                      <input
-                        type="checkbox"
-                        checked={allForwardEnabled}
-                        onChange={(e) => handleMassTogglePreference("forward_enabled", e.target.checked)}
-                        className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
-                      />
-                      <span>📤 Forward</span>
-                    </label>
+                      <label className="flex items-center space-x-1.5 cursor-pointer select-none group" title="Email Forwarding for all">
+                        <input
+                          type="checkbox"
+                          checked={allForwardEnabled}
+                          onChange={(e) => handleMassTogglePreference("forward_enabled", e.target.checked)}
+                          className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                        />
+                        <span className="group-hover:text-slate-300 transition-colors">📤 Fwd</span>
+                      </label>
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
 
             {/* List of Connected Mailboxes */}
             <div>
