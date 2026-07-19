@@ -25,18 +25,20 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -p "${{ secrets.VPS_PORT }}" -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy (git pull + docker compose up --build)
         run: |
-          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+          ssh -i ~/.ssh/deploy_key -p "${{ secrets.VPS_PORT }}" -o IdentitiesOnly=yes \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" '
               set -e
-              cd ~/emailagg
+              cd /root/emailagg
               echo "--- Pulling latest main ---"
-              git pull --ff-only origin main
+              git pull origin main
               echo "--- Rebuilding & restarting containers ---"
               docker compose up -d --build
+              echo "--- Restarting Nginx to flush stale IPs ---"
+              docker compose restart nginx
               echo "--- Container status ---"
               docker compose ps
             '
