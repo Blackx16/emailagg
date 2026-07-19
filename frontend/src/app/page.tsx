@@ -1191,6 +1191,8 @@ export default function DashboardPage() {
                   </div>
                 );
               })()}
+            </div>
+
 
             {/* List of Connected Mailboxes */}
             <div>
