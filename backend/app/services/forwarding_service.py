@@ -1,3 +1,4 @@
+import html
 import logging
 import re
 import uuid
@@ -245,13 +246,13 @@ def _build_forwarding_content(
         html_header = (
             f"<div style='font-family: Arial, sans-serif; font-size: 14px; color: #333; "
             f"border-left: 3px solid #ccc; padding-left: 10px; margin-bottom: 20px; line-height: 1.5;'>"
-            f"<b>---------- Forwarded from {account.email} via EmailAgg ----------</b><br>"
-            f"<b>From:</b> {email.from_name or 'Unknown'} &lt;{email.from_email or 'unknown@domain.com'}&gt;<br>"
-            f"<b>Date:</b> {email.received_at.isoformat() if email.received_at else 'Unknown'}<br>"
-            f"<b>Subject:</b> {email.subject or '(No Subject)'}<br>"
+            f"<b>---------- Forwarded from {html.escape(account.email or 'unknown')} via EmailAgg ----------</b><br>"
+            f"<b>From:</b> {html.escape(email.from_name or 'Unknown')} &lt;{html.escape(email.from_email or 'unknown@domain.com')}&gt;<br>"
+            f"<b>Date:</b> {html.escape(email.received_at.isoformat()) if email.received_at else 'Unknown'}<br>"
+            f"<b>Subject:</b> {html.escape(email.subject or '(No Subject)')}<br>"
         )
         if otp:
-            html_header += f"<b>Extracted OTP Code:</b> <span style='font-size: 16px; font-weight: bold; color: #d93025;'>{otp}</span><br>"
+            html_header += f"<b>Extracted OTP Code:</b> <span style='font-size: 16px; font-weight: bold; color: #d93025;'>{html.escape(otp)}</span><br>"
         html_header += "</div><br>"
         html_content = html_header + html_body
 

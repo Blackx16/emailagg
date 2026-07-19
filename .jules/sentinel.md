@@ -12,3 +12,8 @@
 **Vulnerability:** In Python, passing `None` to `hmac.compare_digest` raises a `TypeError`. Forms and requests with missing fields can evaluate to `None`, resulting in 500 errors.
 **Learning:** Always coalesce potentially missing inputs (like `password or ""`) before passing them to `hmac.compare_digest` to ensure safe operation.
 **Prevention:** Ensure that values passed to `hmac.compare_digest` are guaranteed to be strings or bytes, using a fallback value if they are not explicitly typed as required.
+
+## 2025-02-27 - [XSS Vulnerability in Email Forwarding HTML Template]
+**Vulnerability:** User-controlled inputs (`account.email`, `email.from_name`, `email.from_email`, `email.subject`, `otp`) were interpolated directly into the HTML formatted email body within `_build_forwarding_content` in `backend/app/services/forwarding_service.py` without proper sanitization. This could allow an attacker to craft an email with malicious HTML/JavaScript payloads in these fields, leading to Stored XSS when the forwarded email is viewed in a webmail client.
+**Learning:** HTML strings must never have raw user input appended or formatted directly into them, even in secondary processes like email formatting or forwarding headers.
+**Prevention:** Always use `html.escape(value or 'fallback')` on user-controlled inputs before interpolating them into HTML structures, ensuring optional/null values are safely cast to strings with defaults before escaping.
