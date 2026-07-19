@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #090a0f; /* Deep space dark background */
+  --background: #0f172a; /* Tailwind slate-900 */
   --foreground: #f8fafc;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -14,40 +14,27 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom Glassmorphism styles */
+/* Refined panel styles */
 .glass {
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(30, 41, 59, 0.85); /* slate-800-ish */
+  border: 1px solid rgba(51, 65, 85, 0.5); /* slate-700 */
 }
 
 .glass-card {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+  background: rgba(30, 41, 59, 1); /* solid slate-800 */
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* subtle shadow */
 }
 
 .glass-interactive {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s ease-in-out;
 }
 
 .glass-interactive:hover {
-  background: rgba(30, 41, 59, 0.7);
-  border-color: rgba(99, 102, 241, 0.4); /* Indigo glow */
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
-  transform: translateY(-2px);
-}
-
-/* Neon glow details */
-.glow-cyan {
-  box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
-}
-
-.glow-indigo {
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+  background: rgba(51, 65, 85, 0.8); /* slate-700 */
+  border-color: rgba(71, 85, 105, 0.5); /* slate-600 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 /* Custom scrollbars */

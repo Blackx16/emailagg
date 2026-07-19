@@ -521,7 +521,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-[#090a0f] text-slate-100 p-6">
-        <div className="p-8 rounded-2xl glass-card flex flex-col items-center max-w-sm w-full text-center border border-slate-800">
+        <div className="p-8 rounded-xl glass-card flex flex-col items-center max-w-sm w-full text-center border border-slate-800">
           {error ? (
             <>
               <AlertCircle className="h-10 w-10 text-rose-500 mb-4 animate-bounce" />
@@ -559,9 +559,9 @@ export default function DashboardPage() {
         <div className="absolute top-1/4 left-1/4 h-80 w-80 rounded-full bg-cyan-500/10 blur-[120px] pointer-events-none" />
         <div className="absolute bottom-1/3 right-1/4 h-80 w-80 rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none" />
 
-        <div className="max-w-md w-full glass-card rounded-2xl p-8 shadow-2xl relative border border-slate-800">
+        <div className="max-w-md w-full glass-card rounded-xl p-8 shadow-2xl relative border border-slate-800">
           <div className="flex justify-center mb-5">
-            <div className="h-14 w-14 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg glow-indigo">
+            <div className="h-14 w-14 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg ">
               <Mail className="h-7 w-7 text-white" />
             </div>
           </div>
@@ -581,7 +581,7 @@ export default function DashboardPage() {
           )}
 
           {/* Setup guidance warning */}
-          <div className="mb-6 p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs leading-relaxed text-slate-300">
+          <div className="mb-6 p-4 rounded-xl bg-slate-800 border border-slate-800 space-y-2 text-xs leading-relaxed text-slate-300">
             <div className="flex items-center space-x-1.5 font-semibold text-cyan-400">
               <ShieldCheck className="h-4 w-4" />
               <span>Telegram Web App Access</span>
@@ -607,7 +607,7 @@ export default function DashboardPage() {
                 onChange={(e) => setDevTelegramId(e.target.value)}
                 placeholder="e.g. 5053093069"
                 required
-                className="w-full px-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-900/80 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
 
@@ -640,9 +640,9 @@ export default function DashboardPage() {
     <div className="flex-1 flex flex-col bg-[#090a0f] text-slate-100 min-h-screen">
       
       {/* Header bar */}
-      <header className="sticky top-0 z-30 glass border-b border-slate-900 px-4 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-30 glass border-b border-slate-700 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2.5">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center glow-indigo shadow-md">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center  shadow-md">
             <Mail className="h-4.5 w-4.5 text-white" />
           </div>
           <div>
@@ -683,12 +683,12 @@ export default function DashboardPage() {
 
       {/* Tabs Switcher */}
       <div className="p-4 pb-2 max-w-4xl w-full mx-auto">
-        <div className="grid grid-cols-3 p-1 bg-slate-950/80 border border-slate-900 rounded-xl">
+        <div className="grid grid-cols-3 p-1 bg-slate-900/80 border border-slate-700 rounded-xl">
           <button
             onClick={() => { setActiveTab("inbox"); setSelectedEmail(null); }}
             className={`py-2 px-3 flex items-center justify-center space-x-2 text-xs font-semibold rounded-lg transition duration-200 cursor-pointer ${
               activeTab === "inbox"
-                ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md glow-indigo"
+                ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md "
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
@@ -699,7 +699,7 @@ export default function DashboardPage() {
             onClick={() => { setActiveTab("mailboxes"); setSelectedEmail(null); }}
             className={`py-2 px-3 flex items-center justify-center space-x-2 text-xs font-semibold rounded-lg transition duration-200 cursor-pointer ${
               activeTab === "mailboxes"
-                ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md glow-indigo"
+                ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md "
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
@@ -710,7 +710,7 @@ export default function DashboardPage() {
             onClick={() => { setActiveTab("rules"); setSelectedEmail(null); }}
             className={`py-2 px-3 flex items-center justify-center space-x-2 text-xs font-semibold rounded-lg transition duration-200 cursor-pointer ${
               activeTab === "rules"
-                ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md glow-indigo"
+                ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md "
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
@@ -734,7 +734,7 @@ export default function DashboardPage() {
           <div className="space-y-4">
             
             {/* Search and Filters Toolbar */}
-            <div className="p-4 rounded-2xl glass border border-slate-900/60 space-y-3">
+            <div className="p-4 rounded-xl glass border border-slate-800 space-y-3">
               <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
                 
                 {/* Search Input */}
@@ -744,7 +744,7 @@ export default function DashboardPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search sender, subject, content..."
-                    className="w-full pl-9 pr-8 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full pl-9 pr-8 py-2 bg-slate-900/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   />
                   <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
                   {searchQuery && (
@@ -764,7 +764,7 @@ export default function DashboardPage() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as any)}
-                    className="px-2.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-[10px] sm:text-xs text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    className="px-2.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-[10px] sm:text-xs text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
                     <option value="all">📩 All Statuses</option>
                     <option value="unread">🔵 Unread Only</option>
@@ -778,7 +778,7 @@ export default function DashboardPage() {
                       setProviderFilter(e.target.value as any);
                       setMailboxFilter("all");
                     }}
-                    className="px-2.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-[10px] sm:text-xs text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    className="px-2.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-[10px] sm:text-xs text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
                     <option value="all">🌐 All Providers</option>
                     <option value="microsoft">Ⓜ️ Microsoft</option>
@@ -790,7 +790,7 @@ export default function DashboardPage() {
                   <select
                     value={mailboxFilter}
                     onChange={(e) => setMailboxFilter(e.target.value)}
-                    className="px-2.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-[10px] sm:text-xs text-slate-300 focus:outline-none focus:border-indigo-500 max-w-[150px] truncate cursor-pointer"
+                    className="px-2.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-[10px] sm:text-xs text-slate-300 focus:outline-none focus:border-indigo-500 max-w-[150px] truncate cursor-pointer"
                   >
                     <option value="all">📬 All Mailboxes</option>
                     {accounts
@@ -808,7 +808,7 @@ export default function DashboardPage() {
 
             {/* If inbox is empty */}
             {emails.length === 0 ? (
-              <div className="text-center py-16 px-6 glass-card rounded-2xl border border-slate-900">
+              <div className="text-center py-16 px-6 glass-card rounded-xl border border-slate-700">
                 <div className="h-12 w-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-4">
                   <Inbox className="h-6 w-6 text-slate-500" />
                 </div>
@@ -871,7 +871,7 @@ export default function DashboardPage() {
                           className={`p-3.5 rounded-xl cursor-pointer text-left glass glass-interactive border ${
                             selectedEmail?.id === email.id
                               ? "bg-slate-900/90 border-indigo-500/50 shadow-md shadow-indigo-950/20"
-                              : "border-slate-900/50"
+                              : "border-slate-700/50"
                           }`}
                         >
                           <div className="flex items-center justify-between mb-1.5">
@@ -892,10 +892,10 @@ export default function DashboardPage() {
                             {email.snippet || "No preview snippet available."}
                           </p>
 
-                          <div className="flex items-center justify-between border-t border-slate-900/80 pt-2 text-[8px] tracking-wider uppercase font-bold text-slate-500">
+                          <div className="flex items-center justify-between border-t border-slate-800 pt-2 text-[8px] tracking-wider uppercase font-bold text-slate-500">
                             <span>Inbox: {accountEmail}</span>
                             {email.has_attachment && (
-                              <span className="bg-slate-950/50 border border-slate-800 px-1 rounded text-cyan-400">
+                              <span className="bg-slate-800 border border-slate-800 px-1 rounded text-cyan-400">
                                 📎 Attachment
                               </span>
                             )}
@@ -907,7 +907,7 @@ export default function DashboardPage() {
 
                   {/* Pagination controls */}
                   {totalPages > 1 && (
-                    <div className="flex items-center justify-between border-t border-slate-900/80 pt-4 mt-4 text-xs text-slate-400 px-1">
+                    <div className="flex items-center justify-between border-t border-slate-800 pt-4 mt-4 text-xs text-slate-400 px-1">
                       <span>
                         Showing {(page - 1) * limit + 1} - {Math.min(page * limit, totalEmails)} of {totalEmails}
                       </span>
@@ -950,7 +950,7 @@ export default function DashboardPage() {
                     )}
                   </div>
 
-                  <div className="p-5 glass-card rounded-2xl text-left border border-slate-900 h-[calc(100vh-140px)] overflow-y-auto flex flex-col">
+                  <div className="p-5 glass-card rounded-xl text-left border border-slate-700 h-[calc(100vh-140px)] overflow-y-auto flex flex-col">
                     {!selectedEmail ? (
                       <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
                         <Mail className="h-8 w-8 text-slate-600 mb-2" />
@@ -972,7 +972,7 @@ export default function DashboardPage() {
                           </h1>
                         </div>
 
-                        <div className="border-y border-slate-900 py-3 text-xs space-y-1.5 leading-relaxed text-slate-300">
+                        <div className="border-y border-slate-700 py-3 text-xs space-y-1.5 leading-relaxed text-slate-300">
                           <div>
                             <span className="font-bold text-slate-400">From:</span> {selectedEmail.from_name}{" "}
                             <span className="text-slate-400 font-mono">&lt;{selectedEmail.from_email}&gt;</span>
@@ -1040,12 +1040,12 @@ export default function DashboardPage() {
                             />
                           </div>
                         ) : emailDetail?.body_text && (emailBodyView === "text" || !emailDetail?.body_html) ? (
-                          <div className="text-xs text-slate-300 leading-relaxed bg-slate-950/30 border border-slate-900/60 p-4 rounded-xl whitespace-pre-wrap font-mono mt-2">
+                          <div className="text-xs text-slate-300 leading-relaxed bg-slate-900/30 border border-slate-800 p-4 rounded-xl whitespace-pre-wrap font-mono mt-2">
                             {emailDetail.body_text}
                           </div>
                         ) : (
                           <div className="space-y-2 mt-2">
-                            <div className="text-xs text-slate-300 leading-relaxed bg-slate-950/30 border border-slate-900/60 p-3 rounded-xl whitespace-pre-wrap font-sans">
+                            <div className="text-xs text-slate-300 leading-relaxed bg-slate-900/30 border border-slate-800 p-3 rounded-xl whitespace-pre-wrap font-sans">
                               {selectedEmail.snippet || "No preview available."}
                             </div>
                             <p className="text-[10px] text-slate-500 italic px-1">
@@ -1067,7 +1067,7 @@ export default function DashboardPage() {
           <div className="space-y-6">
             
             {/* Global Settings & Controls Panel */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 mb-2 rounded-2xl glass border border-slate-900 divide-y lg:divide-y-0 lg:divide-x divide-slate-800/50 shadow-md">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 mb-2 rounded-xl glass border border-slate-700 divide-y lg:divide-y-0 lg:divide-x divide-slate-800/50 shadow-md">
               
               {/* Accounts limits */}
               <div className="flex flex-col justify-between text-left p-5">
@@ -1098,7 +1098,7 @@ export default function DashboardPage() {
                       <BellRing className="h-3.5 w-3.5 text-slate-400" />
                       Throttle
                     </h3>
-                    <span className="text-[9px] text-slate-500 bg-slate-900/50 border border-slate-800/50 px-1.5 py-0.5 rounded shrink-0 ml-2">
+                    <span className="text-[9px] text-slate-500 bg-slate-800 border border-slate-800/50 px-1.5 py-0.5 rounded shrink-0 ml-2">
                       <b className="text-indigo-400">{notifLimitEffective}</b>/hr effective
                     </span>
                   </div>
@@ -1113,7 +1113,7 @@ export default function DashboardPage() {
                     value={notifLimitInput}
                     onChange={(e) => setNotifLimitInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && saveNotifLimit()}
-                    className="w-16 px-2 py-1.5 text-xs bg-slate-950/50 border border-slate-800/80 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-center shadow-inner"
+                    className="w-16 px-2 py-1.5 text-xs bg-slate-800 border border-slate-800/80 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-center shadow-inner"
                   />
                   <button
                     onClick={saveNotifLimit}
@@ -1163,7 +1163,7 @@ export default function DashboardPage() {
                           type="checkbox"
                           checked={allDashEnabled}
                           onChange={(e) => handleMassTogglePreference("deliver_to_dashboard", e.target.checked)}
-                          className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                          className="accent-slate-500 rounded bg-slate-900 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
                         />
                         <span className="group-hover:text-slate-300 transition-colors">📬 Dash</span>
                       </label>
@@ -1173,7 +1173,7 @@ export default function DashboardPage() {
                           type="checkbox"
                           checked={allAlertsEnabled}
                           onChange={(e) => handleMassTogglePreference("notify_telegram", e.target.checked)}
-                          className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                          className="accent-slate-500 rounded bg-slate-900 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
                         />
                         <span className="group-hover:text-slate-300 transition-colors">🔔 Alerts</span>
                       </label>
@@ -1183,7 +1183,7 @@ export default function DashboardPage() {
                           type="checkbox"
                           checked={allForwardEnabled}
                           onChange={(e) => handleMassTogglePreference("forward_enabled", e.target.checked)}
-                          className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                          className="accent-slate-500 rounded bg-slate-900 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
                         />
                         <span className="group-hover:text-slate-300 transition-colors">📤 Fwd</span>
                       </label>
@@ -1201,20 +1201,20 @@ export default function DashboardPage() {
               </h3>
 
               {accounts.filter(a => a.status !== "disconnected").length === 0 ? (
-                <div className="p-8 text-center glass-card rounded-2xl border border-slate-900 text-slate-400 text-xs mb-6">
+                <div className="p-8 text-center glass-card rounded-xl border border-slate-700 text-slate-400 text-xs mb-6">
                   No active mailboxes connected. Add an account below to begin.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {accounts.filter(a => a.status !== "disconnected").map((acc) => {
                     return (
-                      <div key={acc.id} className="p-4 rounded-2xl glass-card text-left border border-slate-900 flex flex-col justify-between min-h-[175px]">
+                      <div key={acc.id} className="p-4 rounded-xl glass-card text-left border border-slate-700 flex flex-col justify-between min-h-[175px]">
                         <div className="flex items-start justify-between">
                           <div>
                             <span className={`text-[8px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded ${
                               acc.provider === "microsoft" ? "bg-blue-950/60 border border-blue-900/40 text-blue-400" :
                               acc.provider === "google" ? "bg-red-950/60 border border-red-900/40 text-red-400" :
-                              "bg-slate-950 border border-slate-800 text-slate-400"
+                              "bg-slate-900 border border-slate-800 text-slate-400"
                             }`}>
                               {acc.provider}
                             </span>
@@ -1224,10 +1224,10 @@ export default function DashboardPage() {
                           </div>
 
                           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center ${
-                            acc.status === "active" ? "bg-emerald-950/50 border border-emerald-900/30 text-emerald-400" :
-                            acc.status === "syncing" ? "bg-indigo-950/50 border border-indigo-900/30 text-indigo-400" :
-                            acc.status === "error" ? "bg-rose-950/50 border border-rose-900/30 text-rose-400 animate-pulse" :
-                            "bg-slate-950 border border-slate-850 text-slate-400"
+                            acc.status === "active" ? "bg-emerald-900/20 border border-emerald-900/30 text-emerald-400" :
+                            acc.status === "syncing" ? "bg-indigo-900/20 border border-indigo-900/30 text-indigo-400" :
+                            acc.status === "error" ? "bg-rose-900/20 border border-rose-900/30 text-rose-400 animate-pulse" :
+                            "bg-slate-900 border border-slate-700 text-slate-400"
                           }`}>
                             {acc.status === "syncing" && <Loader2 className="h-3 w-3 animate-spin mr-1 text-indigo-400 shrink-0" />}
                             {acc.status === "active" && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 mr-1.5 shrink-0" />}
@@ -1237,13 +1237,13 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Preferences Toggles */}
-                        <div className="mt-3.5 pt-2 border-t border-slate-900/40 grid grid-cols-3 gap-1.5 text-[9px] font-semibold text-slate-400">
+                        <div className="mt-3.5 pt-2 border-t border-slate-800 grid grid-cols-3 gap-1.5 text-[9px] font-semibold text-slate-400">
                           <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Show incoming emails on dashboard">
                             <input
                               type="checkbox"
                               checked={acc.deliver_to_dashboard}
                               onChange={(e) => handleTogglePreference(acc.id, "deliver_to_dashboard", e.target.checked)}
-                              className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                              className="accent-slate-500 rounded bg-slate-900 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
                             />
                             <span>📬 Dash</span>
                           </label>
@@ -1252,7 +1252,7 @@ export default function DashboardPage() {
                               type="checkbox"
                               checked={acc.notify_telegram}
                               onChange={(e) => handleTogglePreference(acc.id, "notify_telegram", e.target.checked)}
-                              className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                              className="accent-slate-500 rounded bg-slate-900 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
                             />
                             <span>🔔 Alerts</span>
                           </label>
@@ -1261,13 +1261,13 @@ export default function DashboardPage() {
                               type="checkbox"
                               checked={acc.forward_enabled}
                               onChange={(e) => handleTogglePreference(acc.id, "forward_enabled", e.target.checked)}
-                              className="accent-slate-500 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                              className="accent-slate-500 rounded bg-slate-900 border-slate-800 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
                             />
                             <span>📤 Forward</span>
                           </label>
                         </div>
 
-                        <div className="flex items-end justify-between border-t border-slate-900/80 pt-3 mt-2.5">
+                        <div className="flex items-end justify-between border-t border-slate-800 pt-3 mt-2.5">
                           <span className="text-[9px] text-slate-500">
                             Last Sync: {acc.last_sync ? new Date(acc.last_sync).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Never"}
                           </span>
@@ -1288,7 +1288,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Connect mailbox options */}
-            <div className="border-t border-slate-900 pt-5">
+            <div className="border-t border-slate-700 pt-5">
               <h3 className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-3 px-1 text-left">
                 Add Connection Provider
               </h3>
@@ -1296,9 +1296,9 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 xs:grid-cols-3 gap-3">
                 <button
                   onClick={() => handleOAuthConnect("microsoft")}
-                  className="py-3 px-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-blue-900/40 hover:bg-blue-950/10 text-slate-200 hover:text-blue-300 text-xs font-semibold flex flex-col items-center justify-center space-y-2 transition cursor-pointer shadow-sm shadow-black/20"
+                  className="py-3 px-4 rounded-xl bg-slate-800 border border-slate-800 hover:border-blue-900/40 hover:bg-blue-950/10 text-slate-200 hover:text-blue-300 text-xs font-semibold flex flex-col items-center justify-center space-y-2 transition cursor-pointer shadow-sm shadow-black/20"
                 >
-                  <div className="h-9 w-9 rounded-lg bg-blue-950/50 border border-blue-900/30 flex items-center justify-center text-blue-400 shadow-sm shrink-0">
+                  <div className="h-9 w-9 rounded-lg bg-blue-900/20 border border-blue-900/30 flex items-center justify-center text-blue-400 shadow-sm shrink-0">
                     <Sparkles className="h-4.5 w-4.5" />
                   </div>
                   <span>Microsoft Exchange</span>
@@ -1306,7 +1306,7 @@ export default function DashboardPage() {
 
                 <button
                   onClick={() => handleOAuthConnect("google")}
-                  className="py-3 px-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-red-900/40 hover:bg-red-950/10 text-slate-200 hover:text-red-300 text-xs font-semibold flex flex-col items-center justify-center space-y-2 transition cursor-pointer shadow-sm shadow-black/20"
+                  className="py-3 px-4 rounded-xl bg-slate-800 border border-slate-800 hover:border-red-900/40 hover:bg-red-950/10 text-slate-200 hover:text-red-300 text-xs font-semibold flex flex-col items-center justify-center space-y-2 transition cursor-pointer shadow-sm shadow-black/20"
                 >
                   <div className="h-9 w-9 rounded-lg bg-red-950/50 border border-red-900/30 flex items-center justify-center text-red-400 shadow-sm shrink-0">
                     <Mail className="h-4.5 w-4.5" />
@@ -1316,9 +1316,9 @@ export default function DashboardPage() {
 
                 <button
                   onClick={() => setShowImapDialog(true)}
-                  className="py-3 px-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-indigo-900/40 hover:bg-indigo-950/10 text-slate-200 hover:text-indigo-300 text-xs font-semibold flex flex-col items-center justify-center space-y-2 transition cursor-pointer shadow-sm shadow-black/20"
+                  className="py-3 px-4 rounded-xl bg-slate-800 border border-slate-800 hover:border-indigo-900/40 hover:bg-indigo-950/10 text-slate-200 hover:text-indigo-300 text-xs font-semibold flex flex-col items-center justify-center space-y-2 transition cursor-pointer shadow-sm shadow-black/20"
                 >
-                  <div className="h-9 w-9 rounded-lg bg-indigo-950/50 border border-indigo-900/30 flex items-center justify-center text-indigo-400 shadow-sm shrink-0">
+                  <div className="h-9 w-9 rounded-lg bg-indigo-900/20 border border-indigo-900/30 flex items-center justify-center text-indigo-400 shadow-sm shrink-0">
                     <Plus className="h-4.5 w-4.5" />
                   </div>
                   <span>Custom IMAP SSL</span>
@@ -1342,7 +1342,7 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setShowAddRuleForm(!showAddRuleForm)}
-                className="py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer shadow shadow-indigo-600/30"
+                className="py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer shadow shadow-sm shadow-black/10"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>{showAddRuleForm ? "Hide Form" : "New Rule"}</span>
@@ -1351,7 +1351,7 @@ export default function DashboardPage() {
 
             {/* Add Rule Form */}
             {showAddRuleForm && (
-              <form onSubmit={handleAddRule} className="p-5 rounded-2xl glass border border-slate-900 text-left space-y-4">
+              <form onSubmit={handleAddRule} className="p-5 rounded-xl glass border border-slate-700 text-left space-y-4">
                 <h4 className="text-xs font-bold text-white mb-2">Create New Forwarding Rule</h4>
 
                 {/* Scope Selection */}
@@ -1360,7 +1360,7 @@ export default function DashboardPage() {
                   <select
                     value={newRuleScope}
                     onChange={(e) => setNewRuleScope(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 cursor-pointer"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 cursor-pointer"
                   >
                     <option value="global">All Connected Mailboxes (Global)</option>
                     {accounts.filter(a => a.status !== "disconnected").map(acc => (
@@ -1378,7 +1378,7 @@ export default function DashboardPage() {
                       placeholder="e.g. Verification code, OTP"
                       value={newRuleSubject}
                       onChange={(e) => setNewRuleSubject(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
                     />
                   </div>
 
@@ -1389,7 +1389,7 @@ export default function DashboardPage() {
                       placeholder="e.g. netflix.com, google.com"
                       value={newRuleFromDomain}
                       onChange={(e) => setNewRuleFromDomain(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
                     />
                   </div>
 
@@ -1400,7 +1400,7 @@ export default function DashboardPage() {
                       placeholder="e.g. info@netflix.com"
                       value={newRuleFromEmail}
                       onChange={(e) => setNewRuleFromEmail(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
                     />
                   </div>
 
@@ -1411,7 +1411,7 @@ export default function DashboardPage() {
                       placeholder="e.g. single-use, security code"
                       value={newRuleBody}
                       onChange={(e) => setNewRuleBody(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
                     />
                   </div>
                 </div>
@@ -1425,7 +1425,7 @@ export default function DashboardPage() {
                     placeholder="e.g. customer@outlook.com"
                     value={newRuleTarget}
                     onChange={(e) => setNewRuleTarget(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-900 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
                   />
                 </div>
 
@@ -1440,7 +1440,7 @@ export default function DashboardPage() {
                   <button
                     type="submit"
                     disabled={ruleSubmitting}
-                    className="py-1.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-900 text-white text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer shadow shadow-indigo-600/30"
+                    className="py-1.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-900 text-white text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer shadow shadow-sm shadow-black/10"
                   >
                     {ruleSubmitting && <Loader2 className="h-3 w-3 animate-spin mr-1 shrink-0" />}
                     <span>Create Rule</span>
@@ -1456,7 +1456,7 @@ export default function DashboardPage() {
                 <p className="text-[10px] text-slate-400">Loading forwarding rules...</p>
               </div>
             ) : rules.length === 0 ? (
-              <div className="p-8 text-center glass-card rounded-2xl border border-slate-900 text-slate-400 text-xs">
+              <div className="p-8 text-center glass-card rounded-xl border border-slate-700 text-slate-400 text-xs">
                 No forwarding rules defined yet. Click "New Rule" above to get started.
               </div>
             ) : (
@@ -1464,7 +1464,7 @@ export default function DashboardPage() {
                 {rules.map((rule) => {
                   const scopeAccount = accounts.find(a => a.id === rule.mail_account_id);
                   return (
-                    <div key={rule.id} className="p-4 rounded-2xl glass-card text-left border border-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div key={rule.id} className="p-4 rounded-xl glass-card text-left border border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="space-y-2.5 flex-1">
                         {/* Scope Indicator */}
                         <div className="flex items-center space-x-2">
@@ -1489,22 +1489,22 @@ export default function DashboardPage() {
                         {/* Match Conditions List */}
                         <div className="flex flex-wrap gap-1.5">
                           {rule.condition_subject_contains && (
-                            <span className="text-[9px] bg-slate-950 border border-slate-900 rounded px-1.5 py-0.5 text-slate-400">
+                            <span className="text-[9px] bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-slate-400">
                               Subject contains: <b>"{rule.condition_subject_contains}"</b>
                             </span>
                           )}
                           {rule.condition_from_domain && (
-                            <span className="text-[9px] bg-slate-950 border border-slate-900 rounded px-1.5 py-0.5 text-slate-400">
+                            <span className="text-[9px] bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-slate-400">
                               From domain: <b>{rule.condition_from_domain}</b>
                             </span>
                           )}
                           {rule.condition_from_email && (
-                            <span className="text-[9px] bg-slate-950 border border-slate-900 rounded px-1.5 py-0.5 text-slate-400">
+                            <span className="text-[9px] bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-slate-400">
                               From email: <b>{rule.condition_from_email}</b>
                             </span>
                           )}
                           {rule.condition_body_contains && (
-                            <span className="text-[9px] bg-slate-950 border border-slate-900 rounded px-1.5 py-0.5 text-slate-400">
+                            <span className="text-[9px] bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-slate-400">
                               Body contains: <b>"{rule.condition_body_contains}"</b>
                             </span>
                           )}
@@ -1523,7 +1523,7 @@ export default function DashboardPage() {
                             type="checkbox"
                             checked={rule.is_active}
                             onChange={(e) => handleToggleRuleActive(rule.id, e.target.checked)}
-                            className="accent-indigo-600 rounded bg-slate-950 border-slate-800 focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
+                            className="accent-indigo-600 rounded bg-slate-900 border-slate-800 focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
                           />
                           <span className="text-[10px] font-bold text-slate-400">Active</span>
                         </label>
@@ -1549,7 +1549,7 @@ export default function DashboardPage() {
       {/* Custom IMAP Dialog Overlay */}
       {showImapDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="max-w-md w-full glass-card border border-slate-800 rounded-2xl p-6 shadow-2xl text-left relative">
+          <div className="max-w-md w-full glass-card border border-slate-800 rounded-xl p-6 shadow-2xl text-left relative">
             <h3 className="text-sm font-bold text-white flex items-center space-x-1.5 mb-3">
               <Mail className="h-4 w-4 text-indigo-400" />
               <span>Connect Custom IMAP Mailbox</span>
@@ -1587,7 +1587,7 @@ export default function DashboardPage() {
                   value={imapEmail}
                   onChange={(e) => setImapEmail(e.target.value)}
                   placeholder="e.g. john@yahoo.com"
-                  className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 text-xs bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -1599,7 +1599,7 @@ export default function DashboardPage() {
                   value={imapPassword}
                   onChange={(e) => setImapPassword(e.target.value)}
                   placeholder="e.g. xxxx-xxxx-xxxx-xxxx"
-                  className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 text-xs bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -1612,7 +1612,7 @@ export default function DashboardPage() {
                     value={imapHost}
                     onChange={(e) => setImapHost(e.target.value)}
                     placeholder="e.g. imap.mail.yahoo.com"
-                    className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 text-xs bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
                 <div>
@@ -1623,16 +1623,16 @@ export default function DashboardPage() {
                     value={imapPort}
                     onChange={(e) => setImapPort(e.target.value)}
                     placeholder="993"
-                    className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 text-xs bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end space-x-2 pt-4 border-t border-slate-900/80 mt-4">
+              <div className="flex items-center justify-end space-x-2 pt-4 border-t border-slate-800 mt-4">
                 <button
                   type="button"
                   onClick={() => { setShowImapDialog(false); setImapError(null); }}
-                  className="px-3.5 py-1.5 rounded-lg border border-slate-850 hover:border-slate-800 text-slate-400 text-xs font-semibold cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg border border-slate-700 hover:border-slate-800 text-slate-400 text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
