@@ -13,6 +13,10 @@
 // JS bridge (populated by telegram-web-app.js, loaded `beforeInteractive`), not
 // from the URL, so it is safe to strip these params from the address bar once
 // the page has loaded.
+//
+// Stripping can only happen after the SDK has read the URL (in AuthContext),
+// so session recording — which captures its start URL at init — is deferred
+// until then whenever launch params are present (see hasTelegramLaunchParams).
 
 // Any param whose (lower-cased) name starts with this prefix is a Telegram
 // launch parameter (tgWebAppData, tgWebAppVersion, tgWebAppThemeParams, ...).
@@ -33,6 +37,16 @@ const SENSITIVE_PARAM_KEYS = new Set([
 function isSensitiveKey(key: string): boolean {
   const k = key.toLowerCase();
   return k.startsWith(TELEGRAM_PARAM_PREFIX) || SENSITIVE_PARAM_KEYS.has(k);
+}
+
+// Does a `?query` / `#fragment` style segment contain any sensitive key?
+function segmentHasSensitiveKey(segment: string): boolean {
+  if (!segment) return false;
+  const params = new URLSearchParams(segment);
+  for (const key of Array.from(params.keys())) {
+    if (isSensitiveKey(key)) return true;
+  }
+  return false;
 }
 
 // Strip sensitive keys from a `?query` / `#fragment` style segment (without the
@@ -67,6 +81,24 @@ export function sanitizeTelegramUrl(rawUrl: string): string {
     return url.toString();
   } catch {
     return rawUrl;
+  }
+}
+
+// Does `rawUrl` (default: the current browser URL) carry a Telegram launch
+// payload? Used at PostHog init to decide whether session recording must be
+// deferred until the URL has been scrubbed — see stripTelegramLaunchParamsFromLocation.
+export function hasTelegramLaunchParams(rawUrl?: string): boolean {
+  const url =
+    rawUrl ?? (typeof window !== "undefined" ? window.location.href : "");
+  if (!url) return false;
+  try {
+    const u = new URL(url);
+    return (
+      segmentHasSensitiveKey(u.search.replace(/^\?/, "")) ||
+      segmentHasSensitiveKey(u.hash.replace(/^#/, ""))
+    );
+  } catch {
+    return false;
   }
 }
 

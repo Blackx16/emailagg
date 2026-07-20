@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import posthog from "posthog-js";
 import { apiFetch } from "@/lib/api";
 import { stripTelegramLaunchParamsFromLocation } from "@/lib/telegramUrl";
 
@@ -125,6 +126,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       // Strip launch params now that the SDK has successfully parsed them (or we determined it's a regular browser).
       stripTelegramLaunchParamsFromLocation();
+      // The URL is now scrubbed, so it is safe to begin session recording. When
+      // launch params were present at init, recording was deferred (see
+      // instrumentation-client.ts) to keep tgWebAppData out of the recording's
+      // start URL; start it now. This is a no-op if recording is already active.
+      try {
+        posthog.startSessionRecording();
+      } catch (e) {
+        console.warn("Failed to start PostHog session recording:", e);
+      }
       setLoading(false);
     }
   };

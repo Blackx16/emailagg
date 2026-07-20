@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  hasTelegramLaunchParams,
   sanitizeTelegramUrl,
   scrubTelegramLaunchPayload,
   stripTelegramLaunchParamsFromLocation,
@@ -37,6 +38,38 @@ describe('sanitizeTelegramUrl', () => {
   it('returns unparseable input unchanged', () => {
     expect(sanitizeTelegramUrl('not a url')).toBe('not a url');
     expect(sanitizeTelegramUrl('')).toBe('');
+  });
+});
+
+describe('hasTelegramLaunchParams', () => {
+  it('detects tgWebAppData in the fragment', () => {
+    expect(
+      hasTelegramLaunchParams(
+        'https://app.example.com/#tgWebAppData=query_id%3DAAE%26hash%3Ddef&tgWebAppVersion=7.0',
+      ),
+    ).toBe(true);
+  });
+
+  it('detects sensitive params in the query string', () => {
+    expect(
+      hasTelegramLaunchParams(
+        'https://app.example.com/?tab=inbox&signature=abc',
+      ),
+    ).toBe(true);
+  });
+
+  it('returns false for a clean URL', () => {
+    expect(hasTelegramLaunchParams('https://app.example.com/?tab=inbox')).toBe(
+      false,
+    );
+    expect(hasTelegramLaunchParams('https://app.example.com/#rules')).toBe(
+      false,
+    );
+  });
+
+  it('returns false for unparseable or empty input', () => {
+    expect(hasTelegramLaunchParams('not a url')).toBe(false);
+    expect(hasTelegramLaunchParams('')).toBe(false);
   });
 });
 
