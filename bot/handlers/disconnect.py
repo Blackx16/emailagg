@@ -16,7 +16,7 @@ BACKEND_INTERNAL_URL = os.getenv("BACKEND_INTERNAL_URL", "http://backend:8000")
 @router.message(Command("disconnect"))
 async def cmd_disconnect(message: Message):
     """Handle /disconnect command to show connected accounts with disconnect buttons."""
-    telegram_id = message.from_user.id
+    telegram_id = message.chat.id
     logger.info(f"Disconnect command triggered by user {telegram_id}")
 
     try:
