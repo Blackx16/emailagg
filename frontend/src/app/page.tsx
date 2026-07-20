@@ -296,7 +296,11 @@ export default function Dashboard() {
   }
 
   // Check if we're in the Telegram environment even if isTelegramWebApp is false (e.g. initData missing)
-  const isInsideTelegram = typeof window !== 'undefined' && (window as any).Telegram && (window as any).Telegram.WebApp;
+  const isInsideTelegram = typeof window !== 'undefined' && 
+                           (window as any).Telegram && 
+                           (window as any).Telegram.WebApp && 
+                           (window as any).Telegram.WebApp.platform && 
+                           (window as any).Telegram.WebApp.platform !== "unknown";
 
   if (!token && (isTelegramWebApp || isInsideTelegram)) {
     return (
@@ -307,8 +311,7 @@ export default function Dashboard() {
         </p>
         <button
           onClick={() => {
-            if (retryLogin) retryLogin();
-            else window.location.reload();
+            window.location.reload();
           }}
           className="flex items-center space-x-2 py-2.5 px-6 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-sm font-semibold rounded-lg focus:outline-none transition duration-200 shadow-md"
         >

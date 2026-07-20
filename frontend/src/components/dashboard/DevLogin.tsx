@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Mail, AlertCircle, ShieldCheck, Sparkles, Loader2, ArrowRight } from "lucide-react";
 
 interface DevLoginProps {
@@ -8,17 +9,22 @@ interface DevLoginProps {
   loginManual: (id: number) => Promise<void>;
 }
 
-export default function DevLogin({ error, loginManual }: DevLoginProps) {
+function DevLoginContent({ error, loginManual }: DevLoginProps) {
   const [devTelegramId, setDevTelegramId] = useState("");
   const [devLoginLoading, setDevLoginLoading] = useState(false);
   const [devLoginError, setDevLoginError] = useState<string | null>(null);
   const [showBypass, setShowBypass] = useState(false);
+  const searchParams = useSearchParams();
 
   React.useEffect(() => {
-    if (typeof window !== "undefined" && window.location.search.includes("bypass=emaar")) {
+    // Check both searchParams and window location as fallbacks
+    const hasBypassParam = searchParams?.has("bypass") && searchParams?.get("bypass") === "emaar";
+    const hasBypassUrl = typeof window !== "undefined" && window.location.search.includes("bypass=emaar");
+    
+    if (hasBypassParam || hasBypassUrl) {
       setShowBypass(true);
     }
-  }, []);
+  }, [searchParams]);
 
   const handleDevLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,5 +127,13 @@ export default function DevLogin({ error, loginManual }: DevLoginProps) {
         )}
       </div>
     </div>
+  );
+}
+
+export default function DevLogin(props: DevLoginProps) {
+  return (
+    <Suspense fallback={<div className="flex-1 bg-[#090a0f]" />}>
+      <DevLoginContent {...props} />
+    </Suspense>
   );
 }
