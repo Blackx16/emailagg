@@ -39,9 +39,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const win = window as any;
       
-      // Wait briefly for Telegram SDK to inject initData if it's not ready instantly
+      // Log Telegram WebApp state for debugging
+      console.log("[AuthContext] Telegram object exists:", !!win.Telegram);
+      console.log("[AuthContext] Telegram.WebApp exists:", !!(win.Telegram && win.Telegram.WebApp));
+      if (win.Telegram && win.Telegram.WebApp) {
+        console.log("[AuthContext] initData:", win.Telegram.WebApp.initData ? "present (" + win.Telegram.WebApp.initData.length + " chars)" : "EMPTY");
+        console.log("[AuthContext] platform:", win.Telegram.WebApp.platform);
+        console.log("[AuthContext] version:", win.Telegram.WebApp.version);
+      }
+      
+      // Wait for Telegram SDK to inject initData if it's not ready instantly
+      // Retry up to 3 times with increasing delays
       if (win.Telegram && win.Telegram.WebApp && !win.Telegram.WebApp.initData) {
-        await new Promise(resolve => setTimeout(resolve, 300));
+        for (let i = 0; i < 3; i++) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          if (win.Telegram.WebApp.initData) {
+            console.log("[AuthContext] initData became available after retry", i + 1);
+            break;
+          }
+        }
       }
       
       const isTg = !!(
