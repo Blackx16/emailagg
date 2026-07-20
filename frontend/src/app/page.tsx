@@ -296,7 +296,7 @@ export default function Dashboard() {
   }
 
   // Check if we're in the Telegram environment even if isTelegramWebApp is false (e.g. initData missing)
-  const isInsideTelegram = typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp;
+  const isInsideTelegram = typeof window !== 'undefined' && (window as any).Telegram && (window as any).Telegram.WebApp;
 
   if (!token && (isTelegramWebApp || isInsideTelegram)) {
     return (
