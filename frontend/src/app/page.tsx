@@ -12,7 +12,7 @@ import MailboxesTab from "../components/dashboard/MailboxesTab";
 import RulesTab from "../components/dashboard/RulesTab";
 
 export default function Dashboard() {
-  const { user, token, loading: authLoading, error, isTelegramWebApp, tgWebApp, loginManual, logout } = useAuth();
+  const { user, token, loading: authLoading, error, isTelegramWebApp, tgWebApp, loginManual, logout, retryLogin } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"inbox" | "mailboxes" | "rules">("inbox");
   const [dataLoading, setDataLoading] = useState(true);
@@ -295,19 +295,31 @@ export default function Dashboard() {
     );
   }
 
-  if (!token && !isTelegramWebApp) {
-    return <DevLogin error={error} loginManual={loginManual} />;
-  }
+  // Check if we're in the Telegram environment even if isTelegramWebApp is false (e.g. initData missing)
+  const isInsideTelegram = typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp;
 
-  if (!token) {
+  if (!token && (isTelegramWebApp || isInsideTelegram)) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center">
-        <h2 className="text-lg font-bold text-rose-400 mb-2">Authentication Failed</h2>
-        <p className="text-sm text-slate-400 max-w-sm">
-          Could not verify your Telegram WebApp session. {error}
+        <h2 className="text-lg font-bold text-rose-400 mb-2">Session Expired</h2>
+        <p className="text-sm text-slate-400 max-w-sm mb-6">
+          Your session has been logged out or could not be verified. {error}
         </p>
+        <button
+          onClick={() => {
+            if (retryLogin) retryLogin();
+            else window.location.reload();
+          }}
+          className="flex items-center space-x-2 py-2.5 px-6 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-sm font-semibold rounded-lg focus:outline-none transition duration-200 shadow-md"
+        >
+          <span>Log back in seamlessly</span>
+        </button>
       </div>
     );
+  }
+
+  if (!token && !isTelegramWebApp) {
+    return <DevLogin error={error} loginManual={loginManual} />;
   }
 
   return (

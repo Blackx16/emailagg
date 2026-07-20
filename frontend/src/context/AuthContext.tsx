@@ -19,6 +19,7 @@ interface AuthContextType {
   tgWebApp: any | null;
   loginManual: (telegramId: number) => Promise<void>;
   logout: () => void;
+  retryLogin: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,81 +32,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isTelegramWebApp, setIsTelegramWebApp] = useState(false);
   const [tgWebApp, setTgWebApp] = useState<any | null>(null);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const win = window as any;
-        
-        // Safe check for Telegram WebApp
-        const isTg = !!(
-          win.Telegram &&
-          win.Telegram.WebApp &&
-          win.Telegram.WebApp.initData
-        );
-        
-        if (isTg) {
-          const wa = win.Telegram.WebApp;
-          setTgWebApp(wa);
-          setIsTelegramWebApp(true);
-          
-          try {
-            wa.ready();
-            wa.expand();
-          } catch (e) {
-            console.warn("Failed to call Telegram WebApp SDK ready/expand:", e);
-          }
-          
-          try {
-            setError(null);
-            const response = await apiFetch("/api/v1/auth/telegram/login", {
-              method: "POST",
-              body: JSON.stringify({ initData: wa.initData }),
-            });
-            
-            setToken(response.access_token);
-            setUser(response.user);
-            
-            // Safe localStorage write
-            try {
-              localStorage.setItem("emailagg_jwt", response.access_token);
-              localStorage.setItem("emailagg_user", JSON.stringify(response.user));
-            } catch (e) {
-              console.warn("Storage write failed:", e);
-            }
-          } catch (err: any) {
-            console.error("Telegram WebApp authentication failed:", err);
-            setError(err.message || "Failed to authenticate with Telegram.");
-          }
-        } else {
-          setIsTelegramWebApp(false);
-          
-          // Safe localStorage read
-          try {
-            const savedToken = localStorage.getItem("emailagg_jwt");
-            const savedUser = localStorage.getItem("emailagg_user");
-            
-            if (savedToken && savedUser) {
-              setToken(savedToken);
-              try {
-                setUser(JSON.parse(savedUser));
-              } catch (e) {
-                console.error("Failed to parse saved user JSON:", e);
-                localStorage.removeItem("emailagg_jwt");
-                localStorage.removeItem("emailagg_user");
-              }
-            }
-          } catch (e) {
-            console.warn("Storage access failed or is blocked by browser security:", e);
-          }
-        }
-      } catch (globalError: any) {
-        console.error("Global auth initialization error:", globalError);
-        setError(globalError.message || "Initialization failed.");
-      } finally {
-        setLoading(false);
+  const initAuth = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const win = window as any;
+      
+      // Wait briefly for Telegram SDK to inject initData if it's not ready instantly
+      if (win.Telegram && win.Telegram.WebApp && !win.Telegram.WebApp.initData) {
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
-    };
-    
+      
+      const isTg = !!(
+        win.Telegram &&
+        win.Telegram.WebApp &&
+        win.Telegram.WebApp.initData
+      );
+      
+      if (isTg) {
+        const wa = win.Telegram.WebApp;
+        setTgWebApp(wa);
+        setIsTelegramWebApp(true);
+        
+        try {
+          wa.ready();
+          wa.expand();
+        } catch (e) {
+          console.warn("Failed to call Telegram WebApp SDK ready/expand:", e);
+        }
+        
+        try {
+          setError(null);
+          const response = await apiFetch("/api/v1/auth/telegram/login", {
+            method: "POST",
+            body: JSON.stringify({ initData: wa.initData }),
+          });
+          
+          setToken(response.access_token);
+          setUser(response.user);
+          
+          try {
+            localStorage.setItem("emailagg_jwt", response.access_token);
+            localStorage.setItem("emailagg_user", JSON.stringify(response.user));
+          } catch (e) {
+            console.warn("Storage write failed:", e);
+          }
+        } catch (err: any) {
+          console.error("Telegram WebApp authentication failed:", err);
+          setError(err.message || "Failed to authenticate with Telegram.");
+        }
+      } else {
+        setIsTelegramWebApp(false);
+        
+        try {
+          const savedToken = localStorage.getItem("emailagg_jwt");
+          const savedUser = localStorage.getItem("emailagg_user");
+          
+          if (savedToken && savedUser) {
+            setToken(savedToken);
+            try {
+              setUser(JSON.parse(savedUser));
+            } catch (e) {
+              console.error("Failed to parse saved user JSON:", e);
+              localStorage.removeItem("emailagg_jwt");
+              localStorage.removeItem("emailagg_user");
+            }
+          }
+        } catch (e) {
+          console.warn("Storage access failed or is blocked by browser security:", e);
+        }
+      }
+    } catch (globalError: any) {
+      console.error("Global auth initialization error:", globalError);
+      setError(globalError.message || "Initialization failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     initAuth();
   }, []);
 
@@ -158,6 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tgWebApp,
         loginManual,
         logout,
+        retryLogin: initAuth,
       }}
     >
       {children}

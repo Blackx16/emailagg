@@ -12,6 +12,13 @@ export default function DevLogin({ error, loginManual }: DevLoginProps) {
   const [devTelegramId, setDevTelegramId] = useState("");
   const [devLoginLoading, setDevLoginLoading] = useState(false);
   const [devLoginError, setDevLoginError] = useState<string | null>(null);
+  const [showBypass, setShowBypass] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("bypass=emaar")) {
+      setShowBypass(true);
+    }
+  }, []);
 
   const handleDevLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,45 +78,47 @@ export default function DevLogin({ error, loginManual }: DevLoginProps) {
           </p>
         </div>
 
-        <form onSubmit={handleDevLogin} className="space-y-4 border-t border-slate-700/80 pt-5">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 flex items-center">
-            <Sparkles className="h-3.5 w-3.5 text-indigo-400 mr-1" />
-            Developer Bypass Authentication
-          </h3>
-          <div>
-            <label htmlFor="telegramId" className="block text-[10px] uppercase font-bold text-slate-400 mb-1">
-              Enter Test Telegram ID
-            </label>
-            <input
-              id="telegramId"
-              type="text"
-              value={devTelegramId}
-              onChange={(e) => setDevTelegramId(e.target.value)}
-              placeholder="e.g. 5053093069"
-              required
-              className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
-            />
-          </div>
+        {showBypass && (
+          <form onSubmit={handleDevLogin} className="space-y-4 border-t border-slate-700/80 pt-5">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 flex items-center">
+              <Sparkles className="h-3.5 w-3.5 text-indigo-400 mr-1" />
+              Developer Bypass Authentication
+            </h3>
+            <div>
+              <label htmlFor="telegramId" className="block text-[10px] uppercase font-bold text-slate-400 mb-1">
+                Enter Test Telegram ID
+              </label>
+              <input
+                id="telegramId"
+                type="text"
+                value={devTelegramId}
+                onChange={(e) => setDevTelegramId(e.target.value)}
+                placeholder="e.g. 5053093069"
+                required
+                className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
+              />
+            </div>
 
-          {devLoginError && (
-            <p className="text-xs text-rose-400">{devLoginError}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={devLoginLoading}
-            className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition duration-200 cursor-pointer shadow-md shadow-indigo-950/50"
-          >
-            {devLoginLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <span>Bypass to Dashboard</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
+            {devLoginError && (
+              <p className="text-xs text-rose-400">{devLoginError}</p>
             )}
-          </button>
-        </form>
+
+            <button
+              type="submit"
+              disabled={devLoginLoading}
+              className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition duration-200 cursor-pointer shadow-md shadow-indigo-950/50"
+            >
+              {devLoginLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <span>Bypass to Dashboard</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
