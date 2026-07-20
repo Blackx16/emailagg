@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
+import { stripTelegramLaunchParamsFromLocation } from "@/lib/telegramUrl";
 
 interface UserMetadata {
   id: string;
@@ -122,6 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Global auth initialization error:", globalError);
       setError(globalError.message || "Initialization failed.");
     } finally {
+      // Strip launch params now that the SDK has successfully parsed them (or we determined it's a regular browser).
+      stripTelegramLaunchParamsFromLocation();
       setLoading(false);
     }
   };
