@@ -156,15 +156,15 @@ async def send_telegram_notification(self, user_telegram_id: int, email_data: di
         from_email = email_data.get("from_email", "")
         mailbox = email_data.get("mailbox", "")
 
-        escaped_subject = html.escape(subject)
-        escaped_from_name = html.escape(from_name)
+        escaped_subject = html.escape(subject if subject else "(No Subject)")
+        escaped_from_name = html.escape(from_name if from_name else "Unknown")
         # Only log domain, not full address
-        from_domain = from_email.split("@")[-1] if "@" in from_email else "[unknown]"
-        escaped_from_email = html.escape(from_email)
-        escaped_mailbox = html.escape(mailbox)
+        from_domain = from_email.split("@")[-1] if from_email and "@" in from_email else "[unknown]"
+        escaped_from_email = html.escape(from_email if from_email else "unknown@domain.com")
+        escaped_mailbox = html.escape(mailbox if mailbox else "Unknown")
 
         otp = email_data.get("otp")
-        otp_prefix = f"🔑 <b>Verification Code:</b> <code>{html.escape(otp)}</code>\n\n" if otp else ""
+        otp_prefix = f"🔑 <b>Verification Code:</b> <code>{html.escape(otp if otp else '')}</code>\n\n" if otp else ""
 
         text = (
             f"{otp_prefix}📩 <b>New Email Received</b>\n\n"
