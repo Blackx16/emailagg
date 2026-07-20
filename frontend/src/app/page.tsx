@@ -51,7 +51,7 @@ export default function Dashboard() {
 
     try {
       // 1. Fetch Accounts
-      const accountsRes = await fetch("/api/v1/mail/accounts", {
+      const accountsRes = await fetch("/api/v1/accounts", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (accountsRes.ok) {
@@ -80,7 +80,7 @@ export default function Dashboard() {
       if (providerFilter !== "all") searchParams.append("provider", providerFilter);
       if (mailboxFilter !== "all") searchParams.append("account_id", mailboxFilter);
 
-      const emailsRes = await fetch(`/api/v1/mail/emails?${searchParams.toString()}`, {
+      const emailsRes = await fetch(`/api/v1/emails?${searchParams.toString()}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (emailsRes.ok) {
@@ -131,7 +131,7 @@ export default function Dashboard() {
     
     setEmailDetailLoading(true);
     try {
-      const res = await fetch(`/api/v1/mail/emails/${email.id}`, {
+      const res = await fetch(`/api/v1/emails/${email.id}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -188,7 +188,7 @@ export default function Dashboard() {
     if (!confirm("Are you sure you want to disconnect this mailbox?")) return;
     
     try {
-      const res = await fetch(`/api/v1/mail/accounts/${accountId}`, {
+      const res = await fetch(`/api/v1/accounts/${accountId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -207,7 +207,7 @@ export default function Dashboard() {
       const payload: any = {};
       payload[field] = value;
       
-      const res = await fetch(`/api/v1/mail/accounts/${accountId}`, {
+      const res = await fetch(`/api/v1/accounts/${accountId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -240,7 +240,7 @@ export default function Dashboard() {
       for (const accountId of activeIds) {
         const payload: any = {};
         payload[field] = value;
-        await fetch(`/api/v1/mail/accounts/${accountId}`, {
+        await fetch(`/api/v1/accounts/${accountId}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
