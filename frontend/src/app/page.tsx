@@ -50,27 +50,8 @@ export default function Dashboard() {
     if (isRefresh) setRefreshing(true);
 
     try {
-      // 1. Fetch Accounts
-      const accountsRes = await fetch("/api/mail/accounts", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (accountsRes.ok) {
-        const accs = await accountsRes.json();
-        setAccounts(accs);
-      }
+      setRulesLoading(true);
 
-      // 2. Fetch User Settings
-      const userRes = await fetch("/api/auth/me", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        setNotifLimitEffective(userData.notification_limit_effective || 0);
-        setNotifLimitFloor(userData.notification_limit_floor || 0);
-        setNotifLimitInput((userData.notification_limit_effective || 0).toString());
-      }
-
-      // 3. Fetch Emails with pagination/filters
       const searchParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString()
@@ -80,23 +61,41 @@ export default function Dashboard() {
       if (providerFilter !== "all") searchParams.append("provider", providerFilter);
       if (mailboxFilter !== "all") searchParams.append("account_id", mailboxFilter);
 
-      const emailsRes = await fetch(`/api/mail/emails?${searchParams.toString()}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (emailsRes.ok) {
-        const data = await emailsRes.json();
+      // ⚡ Bolt: Performance Improvement
+      // Batched 4 sequential fetches into a single Promise.all call to prevent a network request waterfall.
+      // Expected Impact: Reduces initial dashboard load time by ~3x (parallelizing 4 round-trips into 1).
+      const [accountsRes, userRes, emailsRes, rulesRes] = await Promise.all([
+        fetch("/api/mail/accounts", { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch("/api/auth/me", { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch(`/api/mail/emails?${searchParams.toString()}`, { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch("/api/rules", { headers: { "Authorization": `Bearer ${token}` } })
+      ]);
+
+      const [accs, userData, data, rules] = await Promise.all([
+        accountsRes.ok ? accountsRes.json() : null,
+        userRes.ok ? userRes.json() : null,
+        emailsRes.ok ? emailsRes.json() : null,
+        rulesRes.ok ? rulesRes.json() : null
+      ]);
+
+      if (accs) {
+        setAccounts(accs);
+      }
+
+      if (userData) {
+        setNotifLimitEffective(userData.notification_limit_effective || 0);
+        setNotifLimitFloor(userData.notification_limit_floor || 0);
+        setNotifLimitInput((userData.notification_limit_effective || 0).toString());
+      }
+
+      if (data) {
         setEmails(data.items || []);
         setTotalEmails(data.total || 0);
         setTotalPages(data.pages || 1);
       }
 
-      // 4. Fetch Rules
-      setRulesLoading(true);
-      const rulesRes = await fetch("/api/rules", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (rulesRes.ok) {
-        setRules(await rulesRes.json());
+      if (rules) {
+        setRules(rules);
       }
       setRulesLoading(false);
 

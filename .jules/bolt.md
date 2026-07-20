@@ -7,3 +7,6 @@
 ## 2024-07-19 - Avoid O(N) memory leak in IMAP sync deduplication
 **Learning:** Loading all `message_id`s for a given account directly into memory (`set(existing_result.scalars().all())`) can cause O(N) memory usage, leading to significant memory consumption when dealing with a large volume of emails.
 **Action:** When performing deduplication during syncing, use bounded query deduplication strategies. First fetch the set of potentially new `message_id`s, then run chunked `IN` queries (e.g., in chunks of 100) to fetch the intersection of existing emails.
+## 2024-07-20 - Preventing Network Waterfall in Frontend Data Fetching
+**Learning:** Sequential `await fetch()` calls in a frontend component (like a dashboard initialization) cause a significant network waterfall, increasing total load time linearly with each request.
+**Action:** When multiple independent API calls are required for initialization, batch them concurrently using `Promise.all([fetch1, fetch2, ...])` to reduce the total network round-trip time. Also remember to concurrently await the `.json()` responses.
