@@ -115,7 +115,7 @@ async def cb_accounts(callback: CallbackQuery):
     """Callback redirect to accounts listing."""
     from bot.handlers.accounts import cmd_accounts
 
-    await cmd_accounts(callback.message)
+    await cmd_accounts(callback.message, telegram_id=callback.from_user.id)
     await callback.answer()
 
 
@@ -124,6 +124,6 @@ async def cb_disconnect(callback: CallbackQuery):
     """Callback redirect to disconnect workflow."""
     from bot.handlers.disconnect import cmd_disconnect
 
-    await cmd_disconnect(callback.message)
+    await cmd_disconnect(callback.message, telegram_id=callback.from_user.id)
     await callback.answer()
 

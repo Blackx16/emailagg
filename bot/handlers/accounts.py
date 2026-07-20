@@ -13,9 +13,9 @@ BACKEND_INTERNAL_URL = os.getenv("BACKEND_INTERNAL_URL", "http://backend:8000")
 
 
 @router.message(Command("accounts"))
-async def cmd_accounts(message: Message):
+async def cmd_accounts(message: Message, telegram_id: int = None):
     """Handle /accounts command to list all connected mailboxes and their states."""
-    telegram_id = message.chat.id
+    telegram_id = telegram_id or message.chat.id
     logger.info(f"Accounts query triggered by user {telegram_id}")
 
     try:
