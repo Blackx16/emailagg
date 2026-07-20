@@ -85,9 +85,9 @@ export default function Dashboard() {
       });
       if (emailsRes.ok) {
         const data = await emailsRes.json();
-        setEmails(data.items || []);
+        setEmails(data.emails || []);
         setTotalEmails(data.total || 0);
-        setTotalPages(data.pages || 1);
+        setTotalPages(data.total_pages || 1);
       }
 
       // 4. Fetch Rules
