@@ -95,3 +95,54 @@ async def telegram_login(payload: TelegramLoginSchema, request: Request, db: Asy
             "plan": user.plan
         }
     }
+
+
+class DevBypassSchema(BaseModel):
+    telegram_id: int
+    bypass_key: str
+
+
+@router.post("/telegram/dev-bypass")
+@limiter.limit("5/minute")
+async def dev_bypass_login(payload: DevBypassSchema, request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Developer bypass login: authenticate by telegram_id + a secret bypass key.
+    This avoids the need for Telegram initData signature.
+    Protected by the INTERNAL_API_KEY.
+    """
+    import hmac as _hmac
+
+    if not settings.INTERNAL_API_KEY:
+        raise HTTPException(status_code=500, detail="Server misconfigured.")
+
+    if not _hmac.compare_digest(payload.bypass_key, settings.INTERNAL_API_KEY):
+        logger.warning(f"Dev bypass attempt with invalid key for telegram_id={payload.telegram_id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid bypass key."
+        )
+
+    stmt = select(User).where(User.telegram_id == payload.telegram_id)
+    res = await db.execute(stmt)
+    user = res.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No user found with telegram_id {payload.telegram_id}."
+        )
+
+    logger.info(f"Dev bypass login for user {user.id} (telegram_id={payload.telegram_id})")
+
+    access_token = create_access_token(data={"sub": str(user.id)})
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": str(user.id),
+            "telegram_id": user.telegram_id,
+            "email": user.email,
+            "plan": user.plan
+        }
+    }

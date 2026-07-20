@@ -120,24 +120,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
       
-      // For local development browser testing, we bypass the signature check by registering/logging in via backend API
-      // Since this is development environment, we query the backend users register directly
-      const regResp = await apiFetch("/api/v1/users/register", {
+      // Call the Next.js server-side API route which proxies to backend
+      const response = await fetch("/api/dev-bypass", {
         method: "POST",
-        body: JSON.stringify({ telegram_id: telegramId }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          telegram_id: telegramId,
+          bypass_secret: "emaar",
+        }),
       });
       
-      // Now we generate a development mock JWT access token for this user
-      // Since we don't have Telegram signature, the backend would fail /telegram/login signature check,
-      // but wait, let's make sure the backend telegram/login endpoint supports mock authentication if APP_ENV == "development"
-      // Wait, instead of adding mock auth in backend route, we can just login using a special bypass or generate a token
-      // Let's check: can we add a simple dev-only query bypass to `/auth/telegram/login`?
-      // Yes! If settings.APP_ENV == "development", we can allow passing a header or a plain payload.
-      // But even simpler: we can just call our backend register, and since in local browser tests we just need a valid user ID,
-      // we can add a bypass in the backend if initData is "dev_bypass_telegram_id_12345"!
-      // That is extremely simple and requires no structural changes.
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || `Dev bypass failed (HTTP ${response.status}).`);
+      }
       
-      throw new Error("Manual local login bypass has been removed for security reasons. Please use the Telegram WebApp.");
+      const data = await response.json();
+      
+      setToken(data.access_token);
+      setUser(data.user);
+      
+      try {
+        localStorage.setItem("emailagg_jwt", data.access_token);
+        localStorage.setItem("emailagg_user", JSON.stringify(data.user));
+      } catch (e) {
+        console.warn("Storage write failed:", e);
+      }
     } catch (err: any) {
       console.error("Manual dev login failed:", err);
       setError(err.message || "Bypass authentication failed.");

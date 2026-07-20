@@ -257,6 +257,9 @@ services:
     container_name: emailagg_frontend
     restart: unless-stopped
     env_file: .env
+    environment:
+      INTERNAL_BACKEND_URL: http://backend:8000
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
     depends_on:
       - backend
     networks:
