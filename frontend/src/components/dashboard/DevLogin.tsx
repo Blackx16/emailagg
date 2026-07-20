@@ -46,7 +46,7 @@ export default function DevLogin({ error, loginManual }: DevLoginProps) {
           </div>
         </div>
         
-        <h1 className="text-2xl font-bold text-center text-white tracking-wide mb-1">
+        <h1 className="text-3xl font-bold text-center text-slate-100 tracking-tight mb-1">
           EmailAgg
         </h1>
         <p className="text-xs text-center text-slate-400 mb-6">
@@ -72,7 +72,7 @@ export default function DevLogin({ error, loginManual }: DevLoginProps) {
         </div>
 
         <form onSubmit={handleDevLogin} className="space-y-4 border-t border-slate-700/80 pt-5">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center">
+          <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 flex items-center">
             <Sparkles className="h-3.5 w-3.5 text-indigo-400 mr-1" />
             Developer Bypass Authentication
           </h3>
@@ -87,7 +87,7 @@ export default function DevLogin({ error, loginManual }: DevLoginProps) {
               onChange={(e) => setDevTelegramId(e.target.value)}
               placeholder="e.g. 5053093069"
               required
-              className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
             />
           </div>
 
@@ -98,7 +98,7 @@ export default function DevLogin({ error, loginManual }: DevLoginProps) {
           <button
             type="submit"
             disabled={devLoginLoading}
-            className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition duration-200 cursor-pointer shadow-md shadow-indigo-950/50"
+            className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition duration-200 cursor-pointer shadow-md shadow-indigo-950/50"
           >
             {devLoginLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

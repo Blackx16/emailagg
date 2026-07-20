@@ -144,7 +144,7 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
                 placeholder="e.g. Verification code, OTP"
                 value={newRuleSubject}
                 onChange={(e) => setNewRuleSubject(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/50 placeholder:text-slate-500 transition-shadow"
               />
             </div>
 
@@ -155,7 +155,7 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
                 placeholder="e.g. netflix.com, google.com"
                 value={newRuleFromDomain}
                 onChange={(e) => setNewRuleFromDomain(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/50 placeholder:text-slate-500 transition-shadow"
               />
             </div>
 
@@ -166,7 +166,7 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
                 placeholder="e.g. info@netflix.com"
                 value={newRuleFromEmail}
                 onChange={(e) => setNewRuleFromEmail(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/50 placeholder:text-slate-500 transition-shadow"
               />
             </div>
 
@@ -177,7 +177,7 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
                 placeholder="e.g. single-use, security code"
                 value={newRuleBody}
                 onChange={(e) => setNewRuleBody(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/50 placeholder:text-slate-500 transition-shadow"
               />
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
               placeholder="e.g. customer@outlook.com"
               value={newRuleTarget}
               onChange={(e) => setNewRuleTarget(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-600 placeholder:text-slate-700"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/50 placeholder:text-slate-500 transition-shadow"
             />
           </div>
 

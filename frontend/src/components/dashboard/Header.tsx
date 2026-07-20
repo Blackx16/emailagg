@@ -16,8 +16,8 @@ export default function Header({ user, refreshing, fetchData, logout }: HeaderPr
           <Mail className="h-4.5 w-4.5 text-white" />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-white tracking-wide">EmailAgg</h2>
-          <p className="text-[10px] text-slate-400">Telegram Command Center</p>
+          <h2 className="text-sm font-bold tracking-tight text-slate-100">EmailAgg</h2>
+          <p className="text-[10px] font-medium tracking-wide text-slate-400">Telegram Command Center</p>
         </div>
       </div>
 
@@ -37,7 +37,7 @@ export default function Header({ user, refreshing, fetchData, logout }: HeaderPr
         <button 
           onClick={() => fetchData(true)}
           disabled={refreshing}
-          className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 hover:bg-slate-800 transition duration-150 cursor-pointer"
+          className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-100 hover:border-slate-700 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition duration-150 cursor-pointer"
           title="Refresh Data"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin text-indigo-400" : ""}`} />
@@ -45,7 +45,7 @@ export default function Header({ user, refreshing, fetchData, logout }: HeaderPr
 
         <button
           onClick={logout}
-          className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-900/30 hover:bg-rose-900/10 transition duration-150 cursor-pointer"
+          className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-900/30 hover:bg-rose-900/10 focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition duration-150 cursor-pointer"
           title="Log Out"
         >
           <LogOut className="h-4 w-4" />

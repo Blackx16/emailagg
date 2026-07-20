@@ -130,7 +130,7 @@ export default function MailboxesTab({
             <button
               onClick={saveNotifLimit}
               disabled={notifLimitSaving}
-              className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 text-[10px] font-semibold transition cursor-pointer disabled:opacity-50"
+              className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition cursor-pointer disabled:opacity-50"
             >
               {notifLimitSaving ? "..." : "Save"}
             </button>
@@ -190,7 +190,7 @@ export default function MailboxesTab({
 
       {/* List of Connected Mailboxes */}
       <div>
-        <h3 className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-3 px-1 text-left">
+        <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3 px-1 text-left">
           Your Connected Mailboxes
         </h3>
 
@@ -267,7 +267,7 @@ export default function MailboxesTab({
                   
                   <button
                     onClick={() => handleDisconnect(acc.id)}
-                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-950/30 hover:bg-rose-950/15 transition cursor-pointer"
+                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-950/30 hover:bg-rose-950/15 focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition cursor-pointer"
                     title="Disconnect Mailbox"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -281,7 +281,7 @@ export default function MailboxesTab({
 
       {/* Connect mailbox options */}
       <div className="border-t border-slate-700/50 pt-5">
-        <h3 className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-3 px-1 text-left">
+        <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3 px-1 text-left">
           Add Connection Provider
         </h3>
         
@@ -342,7 +342,7 @@ export default function MailboxesTab({
                   required
                   value={imapEmail}
                   onChange={(e) => setImapEmail(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-600"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
                 />
               </div>
               
@@ -353,7 +353,7 @@ export default function MailboxesTab({
                   required
                   value={imapPassword}
                   onChange={(e) => setImapPassword(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-600"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
                 />
               </div>
 
@@ -366,7 +366,7 @@ export default function MailboxesTab({
                     placeholder="imap.mail.com"
                     value={imapHost}
                     onChange={(e) => setImapHost(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-600"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/50 transition-shadow"
                   />
                 </div>
                 <div className="col-span-1">
@@ -376,7 +376,7 @@ export default function MailboxesTab({
                     required
                     value={imapPort}
                     onChange={(e) => setImapPort(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-600 text-center"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/50 text-center transition-shadow"
                   />
                 </div>
               </div>

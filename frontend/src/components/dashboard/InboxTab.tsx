@@ -49,14 +49,14 @@ export default function InboxTab({
             placeholder="Search subject or sender..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-inner"
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 shadow-inner transition-shadow"
           />
           <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
           {activeSearch && (
             <button
               type="button"
               onClick={handleClearSearch}
-              className="absolute right-3.5 top-3 text-[10px] uppercase font-bold tracking-wider text-slate-400 hover:text-white transition cursor-pointer"
+              className="absolute right-3.5 top-3 text-[10px] uppercase font-bold tracking-wider text-slate-400 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500/50 rounded transition cursor-pointer"
             >
               Clear
             </button>
@@ -68,7 +68,7 @@ export default function InboxTab({
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer shadow-sm"
+              className="appearance-none bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 cursor-pointer shadow-sm transition-shadow"
             >
               <option value="all">All Status</option>
               <option value="unread">Unread Only</option>
@@ -79,7 +79,7 @@ export default function InboxTab({
             <select
               value={providerFilter}
               onChange={(e) => setProviderFilter(e.target.value)}
-              className="appearance-none bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer shadow-sm"
+              className="appearance-none bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 cursor-pointer shadow-sm transition-shadow"
             >
               <option value="all">All Providers</option>
               <option value="microsoft">Microsoft</option>
@@ -91,7 +91,7 @@ export default function InboxTab({
             <select
               value={mailboxFilter}
               onChange={(e) => setMailboxFilter(e.target.value)}
-              className="appearance-none bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer shadow-sm max-w-[140px] truncate"
+              className="appearance-none bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 cursor-pointer shadow-sm transition-shadow max-w-[140px] truncate"
             >
               <option value="all">All Mailboxes</option>
               {accounts
@@ -113,8 +113,8 @@ export default function InboxTab({
           </div>
           {activeSearch || statusFilter !== "all" || providerFilter !== "all" || mailboxFilter !== "all" ? (
             <>
-              <h3 className="text-sm font-bold text-white mb-1">No matching emails</h3>
-              <p className="text-xs text-slate-400 max-w-xs mx-auto mb-5">
+              <h3 className="text-sm font-bold tracking-tight text-slate-100 mb-1">No matching emails</h3>
+              <p className="text-xs text-slate-400 font-medium max-w-xs mx-auto mb-5 leading-relaxed">
                 No emails match your active search term or filter selection.
               </p>
               <button
@@ -132,8 +132,8 @@ export default function InboxTab({
             </>
           ) : (
             <>
-              <h3 className="text-sm font-bold text-white mb-1">No emails yet</h3>
-              <p className="text-xs text-slate-400 max-w-xs mx-auto mb-5">
+              <h3 className="text-sm font-bold tracking-tight text-slate-100 mb-1">No emails yet</h3>
+              <p className="text-xs text-slate-400 font-medium max-w-xs mx-auto mb-5 leading-relaxed">
                 Aggregated emails will appear here as soon as they arrive in your connected inboxes.
               </p>
               {accounts.filter(a => a.status === "active").length === 0 && (
@@ -151,7 +151,7 @@ export default function InboxTab({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
           <div className={`space-y-2 md:col-span-3 ${selectedEmail ? "hidden md:block" : "block"}`}>
-            <h3 className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2 px-1">
+            <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 px-1">
               Aggregated Emails
             </h3>
             
@@ -172,7 +172,7 @@ export default function InboxTab({
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-slate-100 truncate max-w-[150px]">
+                      <span className="text-xs font-semibold tracking-tight text-slate-100 truncate max-w-[150px]">
                         {email.from_name || email.from_email || "Unknown Sender"}
                       </span>
                       <span className="text-[9px] text-slate-400 flex items-center shrink-0">
@@ -181,7 +181,7 @@ export default function InboxTab({
                       </span>
                     </div>
                     
-                    <h4 className="text-xs font-semibold text-slate-200 truncate mb-1">
+                    <h4 className="text-xs font-medium tracking-tight text-slate-200 truncate mb-1">
                       {email.subject || "(No Subject)"}
                     </h4>
                     
@@ -189,7 +189,7 @@ export default function InboxTab({
                       {email.snippet || "No preview snippet available."}
                     </p>
 
-                    <div className="flex items-center justify-between border-t border-slate-700/50 pt-2 text-[8px] tracking-wider uppercase font-bold text-slate-500">
+                    <div className="flex items-center justify-between border-t border-slate-700/50 pt-2 text-[8px] tracking-widest uppercase font-bold text-slate-500">
                       <span>Inbox: {accountEmail}</span>
                       {email.has_attachment && (
                         <span className="bg-slate-800 border border-slate-700 px-1 rounded text-cyan-400">
@@ -211,7 +211,7 @@ export default function InboxTab({
                   <button
                     onClick={() => handlePageChange(page - 1)}
                     disabled={page === 1}
-                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-slate-500/50 transition cursor-pointer"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
@@ -221,7 +221,7 @@ export default function InboxTab({
                   <button
                     onClick={() => handlePageChange(page + 1)}
                     disabled={page === totalPages}
-                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-slate-500/50 transition cursor-pointer"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>

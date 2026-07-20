@@ -24,13 +24,13 @@ export default function EmailDetail({
   return (
     <div className={`md:col-span-2 space-y-2 ${selectedEmail ? "block" : "hidden md:block"}`}>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-[10px] uppercase tracking-wider font-bold text-slate-400 px-1">
+        <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-400 px-1">
           Email Details
         </h3>
         {selectedEmail && (
           <button
             onClick={() => setSelectedEmail(null)}
-            className="md:hidden py-1 px-2.5 bg-slate-900 border border-slate-700 text-slate-300 text-[10px] font-bold rounded-lg cursor-pointer"
+            className="md:hidden py-1 px-2.5 bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700/50 text-[10px] font-bold rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500/50 transition cursor-pointer"
           >
             ← Back to list
           </button>
@@ -54,7 +54,7 @@ export default function EmailDetail({
               <span className="text-[9px] uppercase tracking-wider font-black text-cyan-400 bg-cyan-950/50 border border-cyan-900/40 px-1.5 py-0.5 rounded">
                 {accounts.find(a => a.id === selectedEmail.mail_account_id)?.provider || "IMAP"}
               </span>
-              <h1 className="text-sm font-bold text-white mt-2 leading-snug">
+              <h1 className="text-lg font-bold tracking-tight text-slate-100 mt-2 leading-snug">
                 {selectedEmail.subject || "(No Subject)"}
               </h1>
             </div>
@@ -79,7 +79,7 @@ export default function EmailDetail({
                 <button
                   onClick={() => setEmailBodyView("html")}
                   disabled={!emailDetail?.body_html}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center space-x-2 border cursor-pointer ${
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-200 flex items-center space-x-2 border cursor-pointer ${
                     emailBodyView === "html"
                       ? "bg-indigo-500/10 border-indigo-500/50 text-indigo-400 shadow-sm"
                       : "bg-transparent border-slate-700 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 disabled:opacity-30 disabled:cursor-not-allowed"
@@ -91,7 +91,7 @@ export default function EmailDetail({
                 <button
                   onClick={() => setEmailBodyView("text")}
                   disabled={!emailDetail?.body_text}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center space-x-2 border cursor-pointer ${
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-200 flex items-center space-x-2 border cursor-pointer ${
                     emailBodyView === "text"
                       ? "bg-indigo-500/10 border-indigo-500/50 text-indigo-400 shadow-sm"
                       : "bg-transparent border-slate-700 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 disabled:opacity-30 disabled:cursor-not-allowed"
