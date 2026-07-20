@@ -51,7 +51,7 @@ export default function Dashboard() {
 
     try {
       // 1. Fetch Accounts
-      const accountsRes = await fetch("/api/mail/accounts", {
+      const accountsRes = await fetch("/api/v1/mail/accounts", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (accountsRes.ok) {
@@ -60,7 +60,7 @@ export default function Dashboard() {
       }
 
       // 2. Fetch User Settings
-      const userRes = await fetch("/api/auth/me", {
+      const userRes = await fetch("/api/v1/auth/me", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (userRes.ok) {
@@ -80,7 +80,7 @@ export default function Dashboard() {
       if (providerFilter !== "all") searchParams.append("provider", providerFilter);
       if (mailboxFilter !== "all") searchParams.append("account_id", mailboxFilter);
 
-      const emailsRes = await fetch(`/api/mail/emails?${searchParams.toString()}`, {
+      const emailsRes = await fetch(`/api/v1/mail/emails?${searchParams.toString()}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (emailsRes.ok) {
@@ -92,7 +92,7 @@ export default function Dashboard() {
 
       // 4. Fetch Rules
       setRulesLoading(true);
-      const rulesRes = await fetch("/api/rules", {
+      const rulesRes = await fetch("/api/v1/rules", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (rulesRes.ok) {
@@ -131,7 +131,7 @@ export default function Dashboard() {
     
     setEmailDetailLoading(true);
     try {
-      const res = await fetch(`/api/mail/emails/${email.id}`, {
+      const res = await fetch(`/api/v1/mail/emails/${email.id}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -169,7 +169,7 @@ export default function Dashboard() {
   const handleOAuthConnect = async (provider: "microsoft" | "google") => {
     if (!token) return;
     try {
-      const res = await fetch(`/api/auth/oauth/${provider}/login`, {
+      const res = await fetch(`/api/v1/auth/oauth/${provider}/login`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (!res.ok) throw new Error(`Failed to initiate ${provider} flow`);
@@ -188,7 +188,7 @@ export default function Dashboard() {
     if (!confirm("Are you sure you want to disconnect this mailbox?")) return;
     
     try {
-      const res = await fetch(`/api/mail/accounts/${accountId}`, {
+      const res = await fetch(`/api/v1/mail/accounts/${accountId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -207,7 +207,7 @@ export default function Dashboard() {
       const payload: any = {};
       payload[field] = value;
       
-      const res = await fetch(`/api/mail/accounts/${accountId}`, {
+      const res = await fetch(`/api/v1/mail/accounts/${accountId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -240,7 +240,7 @@ export default function Dashboard() {
       for (const accountId of activeIds) {
         const payload: any = {};
         payload[field] = value;
-        await fetch(`/api/mail/accounts/${accountId}`, {
+        await fetch(`/api/v1/mail/accounts/${accountId}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -266,7 +266,7 @@ export default function Dashboard() {
 
     setNotifLimitSaving(true);
     try {
-      const res = await fetch("/api/auth/me/limit", {
+      const res = await fetch("/api/v1/auth/me/limit", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

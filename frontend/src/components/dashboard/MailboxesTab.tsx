@@ -39,7 +39,7 @@ export default function MailboxesTab({
     setImapConnecting(true);
     setImapError(null);
     try {
-      const res = await fetch("/api/mail/accounts/imap", {
+      const res = await fetch("/api/v1/mail/accounts/imap", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

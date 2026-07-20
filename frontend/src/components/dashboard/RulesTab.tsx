@@ -35,7 +35,7 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
         forward_to_email: newRuleTarget
       };
       
-      const res = await fetch("/api/rules", {
+      const res = await fetch("/api/v1/rules", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -67,7 +67,7 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
   const handleToggleRuleActive = async (ruleId: string, isActive: boolean) => {
     if (!token) return;
     try {
-      const res = await fetch(`/api/rules/${ruleId}`, {
+      const res = await fetch(`/api/v1/rules/${ruleId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -87,7 +87,7 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
     if (!confirm("Are you sure you want to delete this rule?")) return;
     
     try {
-      const res = await fetch(`/api/rules/${ruleId}`, {
+      const res = await fetch(`/api/v1/rules/${ruleId}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`
