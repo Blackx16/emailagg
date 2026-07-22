@@ -1,4 +1,6 @@
-export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://lvh.me:8000";
+export const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  (typeof window !== "undefined" ? "" : "http://lvh.me:8000");
 
 // Override `body` to also accept plain objects — apiFetch will JSON.stringify them.
 interface FetchOptions extends Omit<RequestInit, "body"> {

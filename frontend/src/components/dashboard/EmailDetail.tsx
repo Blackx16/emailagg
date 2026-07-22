@@ -22,7 +22,7 @@ export default function EmailDetail({
   accounts
 }: EmailDetailProps) {
   return (
-    <div className={`md:col-span-2 space-y-2 ${selectedEmail ? "block" : "hidden md:block"}`}>
+    <div className={`md:col-span-2 space-y-2 pb-28 md:pb-32 ${selectedEmail ? "block" : "hidden md:block"}`}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-[10px] uppercase tracking-widest font-bold text-[var(--text-tertiary)] px-1">
           Email Details
@@ -37,7 +37,7 @@ export default function EmailDetail({
         )}
       </div>
 
-      <div className="p-5 glass-card rounded-xl text-left border border-[var(--border)] h-[calc(100vh-140px)] overflow-y-auto flex flex-col">
+      <div className="p-5 pb-28 md:pb-32 glass-card rounded-xl text-left border border-[var(--border)] max-h-[calc(100vh-180px)] overflow-y-auto flex flex-col">
         {!selectedEmail ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
             <Mail className="h-8 w-8 text-[var(--text-tertiary)] mb-2" />

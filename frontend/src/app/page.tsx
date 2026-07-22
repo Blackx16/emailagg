@@ -86,6 +86,10 @@ export default function Dashboard() {
     }
   };
 
+  const handleTouchCancel = () => {
+    touchStartRef.current = null;
+  };
+
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!touchStartRef.current || e.changedTouches.length !== 1) return;
 
@@ -98,11 +102,8 @@ export default function Dashboard() {
     const deltaX = endX - startX;
     const deltaY = endY - startY;
 
-    // Ignore if vertical scrolling dominates
-    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
-
-    // Minimum swipe distance threshold (60px)
-    if (Math.abs(deltaX) >= 60) {
+    // Require horizontal swipe to clearly dominate vertical movement (ratio > 1.5) and minimum swipe distance > 60px
+    if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 60) {
       const currentIndex = TABS.indexOf(activeTab);
       if (deltaX < 0 && currentIndex < TABS.length - 1) {
         // Swipe Left -> next tab
@@ -417,6 +418,7 @@ export default function Dashboard() {
             className="w-full overflow-hidden"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchCancel}
           >
             <div 
               className="flex w-[300%] transition-transform duration-300 ease-out"
