@@ -104,8 +104,8 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
     <div className="space-y-6">
       <div className="flex items-center justify-between text-left">
         <div className="space-y-1">
-          <h3 className="text-xs font-bold text-white">Email Forwarding Rules</h3>
-          <p className="text-[10px] text-slate-400">
+          <h2 className="text-lg font-semibold text-[#ededed]">Forwarding Rules</h2>
+          <p className="text-[10px] text-zinc-400">
             Configure custom rules to forward incoming emails to external addresses.
           </p>
         </div>
@@ -119,8 +119,8 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
       </div>
 
       {showAddRuleForm && (
-        <form onSubmit={handleAddRule} className="p-5 rounded-xl glass border border-slate-700 text-left space-y-4">
-          <h4 className="text-xs font-bold text-white mb-2">Create New Forwarding Rule</h4>
+        <form onSubmit={handleAddRule} className="p-5 rounded-xl glass border border-[#333] text-left space-y-4 mt-4">
+          <h4 className="text-sm font-semibold text-white mb-2">Create New Rule</h4>
 
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-slate-400 block">Scope (Connected Account)</label>
@@ -224,15 +224,15 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
           No forwarding rules defined yet. Click "New Rule" above to get started.
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 mt-4">
           {rules.map((rule) => {
             const scopeAccount = accounts.find(a => a.id === rule.mail_account_id);
             return (
-              <div key={rule.id} className="p-4 rounded-xl glass-card text-left border border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div key={rule.id} className="p-4 rounded-xl glass-card text-left border border-[#333] flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-2.5 flex-1">
                   <div className="flex items-center space-x-2">
-                    <span className={`text-[8px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded ${
-                      rule.mail_account_id ? "bg-slate-900 border border-slate-700 text-slate-400" : "bg-indigo-950/60 border border-indigo-900/40 text-indigo-400"
+                    <span className={`text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full ${
+                      rule.mail_account_id ? "bg-[#222] border border-[#444] text-zinc-300" : "bg-indigo-950/60 border border-indigo-900/40 text-indigo-400"
                     }`}>
                       {rule.mail_account_id ? "Scoped Rule" : "Global Rule"}
                     </span>
@@ -248,25 +248,25 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {rule.condition_subject_contains && (
-                      <span className="text-[9px] bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-slate-400">
-                        Subject contains: <b>"{rule.condition_subject_contains}"</b>
+                      <span className="text-[10px] bg-[#1a1a1a] border border-[#333] rounded-md px-2 py-1 text-zinc-400">
+                        Subject contains: <b className="text-zinc-200">"{rule.condition_subject_contains}"</b>
                       </span>
                     )}
                     {rule.condition_from_domain && (
-                      <span className="text-[9px] bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-slate-400">
-                        From domain: <b>{rule.condition_from_domain}</b>
+                      <span className="text-[10px] bg-[#1a1a1a] border border-[#333] rounded-md px-2 py-1 text-zinc-400">
+                        From domain: <b className="text-zinc-200">{rule.condition_from_domain}</b>
                       </span>
                     )}
                     {rule.condition_from_email && (
-                      <span className="text-[9px] bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-slate-400">
-                        From email: <b>{rule.condition_from_email}</b>
+                      <span className="text-[10px] bg-[#1a1a1a] border border-[#333] rounded-md px-2 py-1 text-zinc-400">
+                        From email: <b className="text-zinc-200">{rule.condition_from_email}</b>
                       </span>
                     )}
                     {rule.condition_body_contains && (
-                      <span className="text-[9px] bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-slate-400">
-                        Body contains: <b>"{rule.condition_body_contains}"</b>
+                      <span className="text-[10px] bg-[#1a1a1a] border border-[#333] rounded-md px-2 py-1 text-zinc-400">
+                        Body contains: <b className="text-zinc-200">"{rule.condition_body_contains}"</b>
                       </span>
                     )}
                     {!rule.condition_subject_contains && !rule.condition_from_domain && !rule.condition_from_email && !rule.condition_body_contains && (
@@ -277,15 +277,15 @@ export default function RulesTab({ token, accounts, rules, rulesLoading, fetchDa
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3.5 self-end md:self-center">
-                  <label className="flex items-center space-x-2 cursor-pointer select-none">
+                <div className="flex items-center space-x-4 self-end md:self-center">
+                  <label className="flex items-center space-x-2 cursor-pointer select-none py-2">
                     <input
                       type="checkbox"
                       checked={rule.is_active}
                       onChange={(e) => handleToggleRuleActive(rule.id, e.target.checked)}
-                      className="accent-indigo-600 rounded bg-slate-900 border-slate-800 focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
+                      className="accent-indigo-600 rounded bg-[#111] border-[#333] focus:ring-0 cursor-pointer h-5 w-5 shrink-0"
                     />
-                    <span className="text-[10px] font-bold text-slate-400">Active</span>
+                    <span className="text-xs font-semibold text-zinc-300">Active</span>
                   </label>
                   
                   <button

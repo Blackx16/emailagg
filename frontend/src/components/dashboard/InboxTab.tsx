@@ -3,6 +3,45 @@ import { Search, Inbox, Clock, ChevronLeft, ChevronRight, Plus } from "lucide-re
 import { Account, EmailItem } from "../../types/dashboard";
 import EmailDetail from "./EmailDetail";
 
+function FilterDropdown({ value, options, onChange, label, className = "" }: any) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const selectedLabel = options.find((o: any) => o.value === value)?.label || label;
+  
+  return (
+    <div className={`relative ${className}`}>
+      <button 
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-[#0a0a0a] border border-[#222] hover:border-[#333] rounded-lg pl-3 pr-8 py-2 text-xs font-medium text-[#ededed] focus:outline-none focus:border-indigo-500 cursor-pointer shadow-sm transition-colors text-left truncate"
+      >
+        {selectedLabel}
+        <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+          <ChevronRight className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+        </span>
+      </button>
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)}></div>
+          <div className="absolute z-20 mt-1 w-full bg-[#0a0a0a] border border-[#333] rounded-lg shadow-2xl overflow-hidden min-w-max max-h-60 overflow-y-auto">
+            {options.map((opt: any) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={`block w-full text-left px-3 py-2 text-xs transition-colors ${value === opt.value ? 'bg-[#1a1a1a] text-white font-medium' : 'text-zinc-400 hover:bg-[#111] hover:text-zinc-200'}`}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 interface InboxTabProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -64,45 +103,42 @@ export default function InboxTab({
         </form>
 
         <div className="flex items-center space-x-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="appearance-none bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 cursor-pointer shadow-sm transition-shadow"
-            >
-              <option value="all">All Status</option>
-              <option value="unread">Unread Only</option>
-              <option value="read">Read Only</option>
-            </select>
-          </div>
-          <div className="relative">
-            <select
-              value={providerFilter}
-              onChange={(e) => setProviderFilter(e.target.value)}
-              className="appearance-none bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 cursor-pointer shadow-sm transition-shadow"
-            >
-              <option value="all">All Providers</option>
-              <option value="microsoft">Microsoft</option>
-              <option value="google">Google</option>
-              <option value="imap">IMAP</option>
-            </select>
-          </div>
-          <div className="relative">
-            <select
-              value={mailboxFilter}
-              onChange={(e) => setMailboxFilter(e.target.value)}
-              className="appearance-none bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 cursor-pointer shadow-sm transition-shadow max-w-[140px] truncate"
-            >
-              <option value="all">All Mailboxes</option>
-              {accounts
-                .filter(a => a.status !== "disconnected")
-                .map(acc => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.email}
-                  </option>
-                ))}
-            </select>
-          </div>
+          <FilterDropdown
+            value={statusFilter}
+            onChange={setStatusFilter}
+            label="All Status"
+            className="min-w-[120px]"
+            options={[
+              { value: "all", label: "All Status" },
+              { value: "unread", label: "Unread Only" },
+              { value: "read", label: "Read Only" },
+            ]}
+          />
+          <FilterDropdown
+            value={providerFilter}
+            onChange={setProviderFilter}
+            label="All Providers"
+            className="min-w-[125px]"
+            options={[
+              { value: "all", label: "All Providers" },
+              { value: "microsoft", label: "Microsoft" },
+              { value: "google", label: "Google" },
+              { value: "imap", label: "IMAP" },
+            ]}
+          />
+          <FilterDropdown
+            value={mailboxFilter}
+            onChange={setMailboxFilter}
+            label="All Mailboxes"
+            className="min-w-[140px] max-w-[160px]"
+            options={[
+              { value: "all", label: "All Mailboxes" },
+              ...accounts.filter(a => a.status !== "disconnected").map(acc => ({
+                value: acc.id,
+                label: acc.email
+              }))
+            ]}
+          />
         </div>
       </div>
 
@@ -150,10 +186,10 @@ export default function InboxTab({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
-          <div className={`space-y-2 md:col-span-3 ${selectedEmail ? "hidden md:block" : "block"}`}>
-            <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2 px-1">
-              Aggregated Emails
-            </h3>
+          <div className={`space-y-4 md:col-span-3 ${selectedEmail ? "hidden md:block" : "block"}`}>
+            <h2 className="text-lg font-semibold text-[#ededed] mb-2 px-1">
+              Inbox
+            </h2>
             
             <div className="space-y-2 overflow-y-auto max-h-[70vh] pr-1">
               {emails.map((email) => {
@@ -165,10 +201,10 @@ export default function InboxTab({
                   <div
                     key={email.id}
                     onClick={() => handleSelectEmail(email)}
-                    className={`p-3.5 rounded-xl cursor-pointer text-left glass glass-interactive border ${
+                    className={`p-4 rounded-xl cursor-pointer text-left glass glass-interactive border transition-all ${
                       selectedEmail?.id === email.id
-                        ? "bg-slate-800/90 border-indigo-500/50 shadow-md shadow-indigo-950/20"
-                        : "border-slate-700/50"
+                        ? "bg-[#111] border-indigo-500/60 shadow-lg"
+                        : "border-[#222]"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1.5">

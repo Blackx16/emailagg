@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { Activity, BellRing, SlidersHorizontal, Loader2, Trash2, AlertCircle, Plus, Mail, Sparkles } from "lucide-react";
+import { Activity, BellRing, SlidersHorizontal, Loader2, Trash2, AlertCircle, Plus, Mail, Sparkles, Inbox, Bell, Send } from "lucide-react";
 import { Account } from "../../types/dashboard";
-
 interface MailboxesTabProps {
   user: any;
   token: string | null;
@@ -144,44 +143,53 @@ export default function MailboxesTab({
         <div className={`flex flex-col text-left p-5 justify-between ${activeAccounts.length === 0 ? "opacity-40" : ""}`}>
           <div>
             <h3 className="text-xs font-bold text-white flex items-center gap-1.5 mb-1">
-              <SlidersHorizontal className="h-3.5 w-3.5 text-slate-400" />
+              <SlidersHorizontal className="h-3.5 w-3.5 text-[#a1a1aa]" />
               Mass Controls
             </h3>
-            <p className="text-[10px] text-slate-400 leading-relaxed">
+            <p className="text-[10px] text-[#a1a1aa] leading-relaxed">
               {activeAccounts.length === 0 ? "No active mailboxes." : "Apply preferences to all active mailboxes."}
             </p>
           </div>
           
           {activeAccounts.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[9px] font-semibold text-slate-400 mt-3 pt-3 border-t border-slate-700/50">
-              <label className="flex items-center space-x-1.5 cursor-pointer select-none group" title="Dash Delivery for all">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-semibold text-[#a1a1aa] mt-4 pt-3 border-t border-[#333]">
+              <label className="flex items-center space-x-2 cursor-pointer select-none group py-1" title="Dash Delivery for all">
                 <input
                   type="checkbox"
                   checked={allDashEnabled}
                   onChange={(e) => handleMassTogglePreference("deliver_to_dashboard", e.target.checked)}
-                  className="accent-slate-500 rounded bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                  className="accent-indigo-500 rounded bg-[#111] border-[#333] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
                 />
-                <span className="group-hover:text-slate-300 transition-colors">📬 Dash</span>
+                <div className="flex items-center group-hover:text-white transition-colors">
+                  <Inbox className="w-3.5 h-3.5 mr-1" />
+                  <span>Dash</span>
+                </div>
               </label>
 
-              <label className="flex items-center space-x-1.5 cursor-pointer select-none group" title="Telegram Alerts for all">
+              <label className="flex items-center space-x-2 cursor-pointer select-none group py-1" title="Telegram Alerts for all">
                 <input
                   type="checkbox"
                   checked={allAlertsEnabled}
                   onChange={(e) => handleMassTogglePreference("notify_telegram", e.target.checked)}
-                  className="accent-slate-500 rounded bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                  className="accent-indigo-500 rounded bg-[#111] border-[#333] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
                 />
-                <span className="group-hover:text-slate-300 transition-colors">🔔 Alerts</span>
+                <div className="flex items-center group-hover:text-white transition-colors">
+                  <Bell className="w-3.5 h-3.5 mr-1" />
+                  <span>Alerts</span>
+                </div>
               </label>
 
-              <label className="flex items-center space-x-1.5 cursor-pointer select-none group" title="Email Forwarding for all">
+              <label className="flex items-center space-x-2 cursor-pointer select-none group py-1" title="Email Forwarding for all">
                 <input
                   type="checkbox"
                   checked={allForwardEnabled}
                   onChange={(e) => handleMassTogglePreference("forward_enabled", e.target.checked)}
-                  className="accent-slate-500 rounded bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                  className="accent-indigo-500 rounded bg-[#111] border-[#333] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
                 />
-                <span className="group-hover:text-slate-300 transition-colors">📤 Fwd</span>
+                <div className="flex items-center group-hover:text-white transition-colors">
+                  <Send className="w-3.5 h-3.5 mr-1" />
+                  <span>Fwd</span>
+                </div>
               </label>
             </div>
           )}
@@ -190,9 +198,9 @@ export default function MailboxesTab({
 
       {/* List of Connected Mailboxes */}
       <div>
-        <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3 px-1 text-left">
-          Your Connected Mailboxes
-        </h3>
+        <h2 className="text-lg font-semibold text-[#ededed] mb-4">
+          Connected Mailboxes
+        </h2>
 
         {activeAccounts.length === 0 ? (
           <div className="p-8 text-center glass-card rounded-xl border border-slate-700 text-slate-400 text-xs mb-6">
@@ -230,33 +238,42 @@ export default function MailboxesTab({
                 </div>
 
                 {/* Preferences Toggles */}
-                <div className="mt-3.5 pt-2 border-t border-slate-700/50 grid grid-cols-3 gap-1.5 text-[9px] font-semibold text-slate-400">
-                  <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Show incoming emails on dashboard">
+                <div className="mt-4 pt-3 border-t border-[#333] grid grid-cols-3 gap-2 text-[10px] font-semibold text-[#a1a1aa]">
+                  <label className="flex items-center space-x-1.5 cursor-pointer select-none py-1 group" title="Show incoming emails on dashboard">
                     <input
                       type="checkbox"
                       checked={acc.deliver_to_dashboard}
                       onChange={(e) => handleTogglePreference(acc.id, "deliver_to_dashboard", e.target.checked)}
-                      className="accent-slate-500 rounded bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                      className="accent-indigo-500 rounded bg-[#111] border-[#333] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
                     />
-                    <span>📬 Dash</span>
+                    <div className="flex items-center group-hover:text-white transition-colors">
+                      <Inbox className="w-3.5 h-3.5 mr-1" />
+                      <span>Dash</span>
+                    </div>
                   </label>
-                  <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Send alerts to your Telegram bot">
+                  <label className="flex items-center space-x-1.5 cursor-pointer select-none py-1 group" title="Send alerts to your Telegram bot">
                     <input
                       type="checkbox"
                       checked={acc.notify_telegram}
                       onChange={(e) => handleTogglePreference(acc.id, "notify_telegram", e.target.checked)}
-                      className="accent-slate-500 rounded bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                      className="accent-indigo-500 rounded bg-[#111] border-[#333] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
                     />
-                    <span>🔔 Alerts</span>
+                    <div className="flex items-center group-hover:text-white transition-colors">
+                      <Bell className="w-3.5 h-3.5 mr-1" />
+                      <span>Alerts</span>
+                    </div>
                   </label>
-                  <label className="flex items-center space-x-1.5 cursor-pointer select-none" title="Enable custom email forwarding rules">
+                  <label className="flex items-center space-x-1.5 cursor-pointer select-none py-1 group" title="Enable custom email forwarding rules">
                     <input
                       type="checkbox"
                       checked={acc.forward_enabled}
                       onChange={(e) => handleTogglePreference(acc.id, "forward_enabled", e.target.checked)}
-                      className="accent-slate-500 rounded bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer h-3.5 w-3.5 shrink-0"
+                      className="accent-indigo-500 rounded bg-[#111] border-[#333] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
                     />
-                    <span>📤 Forward</span>
+                    <div className="flex items-center group-hover:text-white transition-colors">
+                      <Send className="w-3.5 h-3.5 mr-1" />
+                      <span>Forward</span>
+                    </div>
                   </label>
                 </div>
 
@@ -280,10 +297,10 @@ export default function MailboxesTab({
       </div>
 
       {/* Connect mailbox options */}
-      <div className="border-t border-slate-700/50 pt-5">
-        <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3 px-1 text-left">
-          Add Connection Provider
-        </h3>
+      <div className="border-t border-[#333] pt-6">
+        <h2 className="text-lg font-semibold text-[#ededed] mb-4">
+          Add Mailbox
+        </h2>
         
         <div className="grid grid-cols-1 xs:grid-cols-3 gap-3">
           <button

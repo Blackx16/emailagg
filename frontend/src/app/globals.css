@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0f172a; /* Tailwind slate-900 */
-  --foreground: #f8fafc;
+  --background: #000000;
+  --foreground: #ededed;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -12,18 +12,22 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Refined panel styles */
 .glass {
-  background: rgba(30, 41, 59, 0.85); /* slate-800-ish */
-  border: 1px solid rgba(51, 65, 85, 0.5); /* slate-700 */
+  background: rgba(10, 10, 10, 0.85); /* very dark gray */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
 }
 
 .glass-card {
-  background: rgba(30, 41, 59, 1); /* solid slate-800 */
-  border: 1px solid rgba(51, 65, 85, 0.5);
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* subtle shadow */
+  background: rgba(10, 10, 10, 1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); 
+  border-radius: 8px; /* Standardize border radius */
 }
 
 .glass-interactive {
@@ -31,10 +35,8 @@ body {
 }
 
 .glass-interactive:hover {
-  background: rgba(51, 65, 85, 0.8); /* slate-700 */
-  border-color: rgba(71, 85, 105, 0.5); /* slate-600 */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
+  background: rgba(25, 25, 25, 1);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* Custom scrollbars */
@@ -46,23 +48,18 @@ body {
   background: rgba(0, 0, 0, 0.2);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Sync pulse micro-animation */
 @keyframes sync-pulse {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
-
 .animate-sync {
   animation: sync-pulse 1.8s linear infinite;
 }
