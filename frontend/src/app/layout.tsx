@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { CSPostHogProvider } from "./providers";
 import SuspendedPostHogPageView from "./PostHogPageView";
 import "./globals.css";
@@ -39,10 +40,12 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
       </head>
-      <body className="min-h-full flex flex-col bg-[#090a0f] text-slate-100">
+      <body className="min-h-full flex flex-col text-[var(--text-primary)]" style={{ backgroundColor: 'var(--bg)' }}>
         <CSPostHogProvider>
           <SuspendedPostHogPageView />
-          <AuthProvider>{children}</AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </ThemeProvider>
         </CSPostHogProvider>
       </body>
     </html>

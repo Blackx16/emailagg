@@ -287,10 +287,10 @@ export default function Dashboard() {
 
   if (authLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-[#090a0f]">
+      <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
         <Loader2 className="h-8 w-8 text-indigo-500 animate-spin mb-4" />
-        <h1 className="text-xl font-bold text-white tracking-wide">EmailAgg</h1>
-        <p className="text-sm text-slate-500">Initializing connection...</p>
+        <h1 className="text-xl font-bold text-[var(--text-primary)] tracking-wide">EmailAgg</h1>
+        <p className="text-sm text-[var(--text-tertiary)]">Initializing connection...</p>
       </div>
     );
   }
@@ -304,16 +304,16 @@ export default function Dashboard() {
 
   if (!token && (isTelegramWebApp || isInsideTelegram)) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-[#090a0f] p-6 text-center">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center" style={{ backgroundColor: 'var(--bg)' }}>
         <h2 className="text-lg font-bold text-rose-400 mb-2">Session Expired</h2>
-        <p className="text-sm text-slate-400 max-w-sm mb-6">
+        <p className="text-sm text-[var(--text-secondary)] max-w-sm mb-6">
           Your session has been logged out or could not be verified. {error}
         </p>
         <button
           onClick={() => {
             window.location.reload();
           }}
-          className="flex items-center space-x-2 py-2.5 px-6 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-sm font-semibold rounded-lg focus:outline-none transition duration-200 shadow-md"
+          className="flex items-center space-x-2 py-2.5 px-6 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg focus:outline-none transition duration-200 shadow-md"
         >
           <span>Log back in seamlessly</span>
         </button>
@@ -326,17 +326,17 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[#090a0f] min-h-screen">
+    <div className="flex-1 flex flex-col min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
       <Header user={user} refreshing={refreshing} fetchData={fetchData} logout={logout} />
 
       <main className="flex-1 p-4 md:p-6 w-full max-w-[1400px] mx-auto">
-        <div className="flex items-center space-x-1.5 mb-6 glass p-1.5 rounded-xl border border-slate-700/50 inline-flex shadow-sm">
+        <div className="flex items-center space-x-1.5 mb-6 glass p-1.5 rounded-xl border border-[var(--border)] inline-flex shadow-sm">
           <button
             onClick={() => setActiveTab("inbox")}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
               activeTab === "inbox" 
-                ? "bg-slate-800 text-white shadow-sm" 
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
+                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm" 
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
             }`}
           >
             <Inbox className="h-4 w-4" />
@@ -346,8 +346,8 @@ export default function Dashboard() {
             onClick={() => setActiveTab("mailboxes")}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
               activeTab === "mailboxes" 
-                ? "bg-slate-800 text-white shadow-sm" 
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
+                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm" 
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
             }`}
           >
             <Activity className="h-4 w-4" />
@@ -357,8 +357,8 @@ export default function Dashboard() {
             onClick={() => setActiveTab("rules")}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
               activeTab === "rules" 
-                ? "bg-slate-800 text-white shadow-sm" 
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
+                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm" 
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
             }`}
           >
             <SlidersHorizontal className="h-4 w-4" />
@@ -369,7 +369,7 @@ export default function Dashboard() {
         {dataLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="h-8 w-8 text-indigo-500 animate-spin mb-4" />
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">
+            <p className="text-xs font-medium text-[var(--text-secondary)]">
               Synchronizing data...
             </p>
           </div>

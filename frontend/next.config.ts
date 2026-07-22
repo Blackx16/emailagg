@@ -16,6 +16,9 @@ if (frontendUrl) {
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: allowedOrigins,
+  turbopack: {
+    root: "/Users/jasraj/Dev/tele_bot/emailagg/frontend",
+  },
 };
 
 export default nextConfig;

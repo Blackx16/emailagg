@@ -1,33 +1,105 @@
 @import "tailwindcss";
 
+/* ================================================================
+   THEME TOKENS
+   Dark = default (no attribute needed).
+   Light = [data-theme="light"] on <html>.
+   ================================================================ */
+
 :root {
-  --background: #000000;
-  --foreground: #ededed;
+  /* ---- Dark mode (default) ---- */
+  --bg:          #000000;
+  --bg-surface:  #0a0a0a;
+  --bg-elevated: #111111;
+  --bg-hover:    #191919;
+
+  --border:       #222222;
+  --border-strong: #333333;
+
+  --text-primary:   #ededed;
+  --text-secondary: #a1a1aa;
+  --text-tertiary:  #71717a;
+
+  --accent:      #4f46e5;
+  --accent-hover: #6366f1;
+  --accent-muted: rgba(79, 70, 229, 0.15);
+
+  /* Glass effect */
+  --glass-bg:    rgba(10, 10, 10, 0.85);
+  --glass-solid: rgba(10, 10, 10, 1);
+  --glass-hover: rgba(25, 25, 25, 1);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-hover: rgba(255, 255, 255, 0.2);
+
+  /* Scrollbar */
+  --scrollbar-track: rgba(0, 0, 0, 0.2);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+
+  /* Shadows */
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+[data-theme="light"] {
+  /* ---- Light mode (Notion-inspired off-white) ---- */
+  --bg:          #ffffff;
+  --bg-surface:  #f7f7f5;
+  --bg-elevated: #ffffff;
+  --bg-hover:    #efedea;
+
+  --border:       #e8e5e0;
+  --border-strong: #d4d1cc;
+
+  --text-primary:   #37352f;
+  --text-secondary: #787774;
+  --text-tertiary:  #9b9a97;
+
+  --accent:      #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-muted: rgba(79, 70, 229, 0.08);
+
+  /* Glass effect (light mode = solid, no blur needed) */
+  --glass-bg:    rgba(247, 247, 245, 0.95);
+  --glass-solid: #f7f7f5;
+  --glass-hover: #efedea;
+  --glass-border: #e8e5e0;
+  --glass-border-hover: #d4d1cc;
+
+  /* Scrollbar */
+  --scrollbar-track: rgba(0, 0, 0, 0.04);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+}
+
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--bg);
+  color: var(--text-primary);
   font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Refined panel styles */
 .glass {
-  background: rgba(10, 10, 10, 0.85); /* very dark gray */
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   backdrop-filter: blur(12px);
 }
 
 .glass-card {
-  background: rgba(10, 10, 10, 1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); 
-  border-radius: 8px; /* Standardize border radius */
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  border-radius: 8px;
 }
 
 .glass-interactive {
@@ -35,8 +107,8 @@ body {
 }
 
 .glass-interactive:hover {
-  background: rgba(25, 25, 25, 1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--glass-hover);
+  border-color: var(--glass-border-hover);
 }
 
 /* Custom scrollbars */
@@ -45,14 +117,14 @@ body {
   height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--scrollbar-thumb);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Sync pulse micro-animation */
@@ -62,4 +134,12 @@ body {
 }
 .animate-sync {
   animation: sync-pulse 1.8s linear infinite;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

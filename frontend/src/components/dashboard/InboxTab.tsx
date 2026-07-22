@@ -1,33 +1,45 @@
-import React from "react";
-import { Search, Inbox, Clock, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import React, { useRef, useEffect } from "react";
+import { Search, Inbox, Clock, ChevronLeft, ChevronRight, Plus, ChevronDown, X } from "lucide-react";
 import { Account, EmailItem } from "../../types/dashboard";
 import EmailDetail from "./EmailDetail";
 
 function FilterDropdown({ value, options, onChange, label, className = "" }: any) {
   const [isOpen, setIsOpen] = React.useState(false);
   const selectedLabel = options.find((o: any) => o.value === value)?.label || label;
-  
+
   return (
     <div className={`relative ${className}`}>
-      <button 
+      <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-[#0a0a0a] border border-[#222] hover:border-[#333] rounded-lg pl-3 pr-8 py-2 text-xs font-medium text-[#ededed] focus:outline-none focus:border-indigo-500 cursor-pointer shadow-sm transition-colors text-left truncate"
+        className="w-full bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-strong)] rounded-lg pl-3 pr-8 py-2.5 text-xs font-medium text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 cursor-pointer transition-colors text-left truncate"
       >
         {selectedLabel}
         <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-          <ChevronRight className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+          <ChevronDown className={`w-3.5 h-3.5 text-[var(--text-tertiary)] transition-transform ${isOpen ? "rotate-180" : ""}`} />
         </span>
       </button>
+
+      {/* Mobile: bottom sheet. Desktop: inline dropdown */}
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)}></div>
-          <div className="absolute z-20 mt-1 w-full bg-[#0a0a0a] border border-[#333] rounded-lg shadow-2xl overflow-hidden min-w-max max-h-60 overflow-y-auto">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/40 md:bg-transparent"
+            onClick={() => setIsOpen(false)}
+          />
+
+          {/* Desktop dropdown */}
+          <div className="hidden md:block absolute z-50 mt-1 w-full bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-lg shadow-2xl overflow-hidden min-w-max">
             {options.map((opt: any) => (
               <button
                 key={opt.value}
                 type="button"
-                className={`block w-full text-left px-3 py-2 text-xs transition-colors ${value === opt.value ? 'bg-[#1a1a1a] text-white font-medium' : 'text-zinc-400 hover:bg-[#111] hover:text-zinc-200'}`}
+                className={`block w-full text-left px-3 py-2.5 text-xs transition-colors ${
+                  value === opt.value
+                    ? "bg-[var(--accent-muted)] text-[var(--text-primary)] font-semibold"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                }`}
                 onClick={() => {
                   onChange(opt.value);
                   setIsOpen(false);
@@ -37,11 +49,51 @@ function FilterDropdown({ value, options, onChange, label, className = "" }: any
               </button>
             ))}
           </div>
+
+          {/* Mobile bottom sheet */}
+          <div className="md:hidden fixed inset-x-0 bottom-0 z-50 animate-slide-up">
+            <div className="bg-[var(--bg-elevated)] border-t border-[var(--border-strong)] rounded-t-2xl shadow-2xl px-2 pb-8 pt-3 max-h-[60vh] overflow-y-auto">
+              {/* Handle bar */}
+              <div className="flex justify-center mb-3">
+                <div className="w-10 h-1 rounded-full bg-[var(--border-strong)]" />
+              </div>
+              {/* Header */}
+              <div className="flex items-center justify-between px-3 mb-2">
+                <span className="text-sm font-semibold text-[var(--text-primary)]">{label}</span>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-[var(--bg-hover)] text-[var(--text-tertiary)] cursor-pointer transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Options */}
+              {options.map((opt: any) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`block w-full text-left px-4 py-3.5 text-sm rounded-lg mb-0.5 transition-colors ${
+                    value === opt.value
+                      ? "bg-[var(--accent-muted)] text-[var(--text-primary)] font-semibold"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                  }`}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </>
       )}
     </div>
   );
 }
+
 interface InboxTabProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -81,28 +133,28 @@ export default function InboxTab({
 }: InboxTabProps) {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-700/50 pb-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
         <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
           <input
             type="text"
             placeholder="Search subject or sender..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 shadow-inner transition-shadow"
+            className="w-full bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 shadow-inner transition-shadow"
           />
-          <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
+          <Search className="absolute left-3.5 top-3 h-4 w-4 text-[var(--text-tertiary)]" />
           {activeSearch && (
             <button
               type="button"
               onClick={handleClearSearch}
-              className="absolute right-3.5 top-3 text-[10px] uppercase font-bold tracking-wider text-slate-400 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500/50 rounded transition cursor-pointer"
+              className="absolute right-3.5 top-3 text-[10px] uppercase font-bold tracking-wider text-[var(--text-tertiary)] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 rounded transition cursor-pointer"
             >
               Clear
             </button>
           )}
         </form>
 
-        <div className="flex items-center space-x-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+        <div className="flex items-center space-x-2 pb-1 md:pb-0">
           <FilterDropdown
             value={statusFilter}
             onChange={setStatusFilter}
@@ -143,14 +195,14 @@ export default function InboxTab({
       </div>
 
       {emails.length === 0 ? (
-        <div className="text-center py-16 px-6 glass-card rounded-xl border border-slate-700">
-          <div className="h-12 w-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-4">
-            <Inbox className="h-6 w-6 text-slate-500" />
+        <div className="text-center py-16 px-6 glass-card rounded-xl border border-[var(--border)]">
+          <div className="h-12 w-12 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center mx-auto mb-4">
+            <Inbox className="h-6 w-6 text-[var(--text-tertiary)]" />
           </div>
           {activeSearch || statusFilter !== "all" || providerFilter !== "all" || mailboxFilter !== "all" ? (
             <>
-              <h3 className="text-sm font-bold tracking-tight text-slate-100 mb-1">No matching emails</h3>
-              <p className="text-xs text-slate-400 font-medium max-w-xs mx-auto mb-5 leading-relaxed">
+              <h3 className="text-sm font-bold tracking-tight text-[var(--text-primary)] mb-1">No matching emails</h3>
+              <p className="text-xs text-[var(--text-secondary)] font-medium max-w-xs mx-auto mb-5 leading-relaxed">
                 No emails match your active search term or filter selection.
               </p>
               <button
@@ -161,15 +213,15 @@ export default function InboxTab({
                   setProviderFilter("all");
                   setMailboxFilter("all");
                 }}
-                className="inline-flex items-center space-x-1.5 py-1.5 px-3.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-white text-xs font-semibold rounded-lg transition cursor-pointer"
+                className="inline-flex items-center space-x-1.5 py-1.5 px-3.5 bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-strong)] text-[var(--text-primary)] text-xs font-semibold rounded-lg transition cursor-pointer"
               >
                 Clear Filters
               </button>
             </>
           ) : (
             <>
-              <h3 className="text-sm font-bold tracking-tight text-slate-100 mb-1">No emails yet</h3>
-              <p className="text-xs text-slate-400 font-medium max-w-xs mx-auto mb-5 leading-relaxed">
+              <h3 className="text-sm font-bold tracking-tight text-[var(--text-primary)] mb-1">No emails yet</h3>
+              <p className="text-xs text-[var(--text-secondary)] font-medium max-w-xs mx-auto mb-5 leading-relaxed">
                 Aggregated emails will appear here as soon as they arrive in your connected inboxes.
               </p>
               {accounts.filter(a => a.status === "active").length === 0 && (
@@ -187,7 +239,7 @@ export default function InboxTab({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
           <div className={`space-y-4 md:col-span-3 ${selectedEmail ? "hidden md:block" : "block"}`}>
-            <h2 className="text-lg font-semibold text-[#ededed] mb-2 px-1">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2 px-1">
               Inbox
             </h2>
             
@@ -203,32 +255,32 @@ export default function InboxTab({
                     onClick={() => handleSelectEmail(email)}
                     className={`p-4 rounded-xl cursor-pointer text-left glass glass-interactive border transition-all ${
                       selectedEmail?.id === email.id
-                        ? "bg-[#111] border-indigo-500/60 shadow-lg"
-                        : "border-[#222]"
+                        ? "bg-[var(--bg-elevated)] border-indigo-500/60 shadow-lg"
+                        : "border-[var(--border)]"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-semibold tracking-tight text-slate-100 truncate max-w-[150px]">
+                      <span className="text-xs font-semibold tracking-tight text-[var(--text-primary)] truncate max-w-[150px]">
                         {email.from_name || email.from_email || "Unknown Sender"}
                       </span>
-                      <span className="text-[9px] text-slate-400 flex items-center shrink-0">
+                      <span className="text-[9px] text-[var(--text-tertiary)] flex items-center shrink-0">
                         <Clock className="h-3 w-3 mr-0.5 shrink-0" />
                         {formattedTime}
                       </span>
                     </div>
                     
-                    <h4 className="text-xs font-medium tracking-tight text-slate-200 truncate mb-1">
+                    <h4 className="text-xs font-medium tracking-tight text-[var(--text-primary)] truncate mb-1">
                       {email.subject || "(No Subject)"}
                     </h4>
                     
-                    <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed mb-2">
+                    <p className="text-[10px] text-[var(--text-secondary)] line-clamp-2 leading-relaxed mb-2">
                       {email.snippet || "No preview snippet available."}
                     </p>
 
-                    <div className="flex items-center justify-between border-t border-slate-700/50 pt-2 text-[8px] tracking-widest uppercase font-bold text-slate-500">
+                    <div className="flex items-center justify-between border-t border-[var(--border)] pt-2 text-[8px] tracking-widest uppercase font-bold text-[var(--text-tertiary)]">
                       <span>Inbox: {accountEmail}</span>
                       {email.has_attachment && (
-                        <span className="bg-slate-800 border border-slate-700 px-1 rounded text-cyan-400">
+                        <span className="bg-[var(--bg-surface)] border border-[var(--border)] px-1 rounded text-cyan-500">
                           📎 Attachment
                         </span>
                       )}
@@ -239,7 +291,7 @@ export default function InboxTab({
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-slate-700 pt-4 mt-4 text-xs text-slate-400 px-1">
+              <div className="flex items-center justify-between border-t border-[var(--border)] pt-4 mt-4 text-xs text-[var(--text-secondary)] px-1">
                 <span>
                   Showing {(page - 1) * limit + 1} - {Math.min(page * limit, totalEmails)} of {totalEmails}
                 </span>
@@ -247,17 +299,17 @@ export default function InboxTab({
                   <button
                     onClick={() => handlePageChange(page - 1)}
                     disabled={page === 1}
-                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-slate-500/50 transition cursor-pointer"
+                    className="p-1.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition cursor-pointer"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
-                  <span className="px-3 font-semibold text-slate-200">
+                  <span className="px-3 font-semibold text-[var(--text-primary)]">
                     Page {page} of {totalPages}
                   </span>
                   <button
                     onClick={() => handlePageChange(page + 1)}
                     disabled={page === totalPages}
-                    className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-slate-500/50 transition cursor-pointer"
+                    className="p-1.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition cursor-pointer"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
@@ -277,6 +329,17 @@ export default function InboxTab({
           />
         </div>
       )}
+
+      {/* Bottom sheet slide-up animation */}
+      <style jsx>{`
+        @keyframes slide-up {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+      `}</style>
     </div>
   );
 }
