@@ -252,7 +252,7 @@ def _build_forwarding_content(
             f"<b>Subject:</b> {html.escape(email.subject or '(No Subject)')}<br>"
         )
         if otp:
-            html_header += f"<b>Extracted OTP Code:</b> <span style='font-size: 16px; font-weight: bold; color: #d93025;'>{html.escape(otp)}</span><br>"
+            html_header += f"<b>Extracted OTP Code:</b> <span style='font-size: 16px; font-weight: bold; color: #d93025;'>{html.escape(otp or '')}</span><br>"
         html_header += "</div><br>"
         html_content = html_header + html_body
 

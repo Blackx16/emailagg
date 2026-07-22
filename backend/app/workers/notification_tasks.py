@@ -151,10 +151,10 @@ async def send_telegram_notification(self, user_telegram_id: int, email_data: di
         await db.refresh(db_notification)
 
         # 4. Format message — no raw subject/sender in logs
-        subject = email_data.get("subject", "(No Subject)")
-        from_name = email_data.get("from_name", "Unknown")
-        from_email = email_data.get("from_email", "")
-        mailbox = email_data.get("mailbox", "")
+        subject = email_data.get("subject") or "(No Subject)"
+        from_name = email_data.get("from_name") or "Unknown"
+        from_email = email_data.get("from_email") or ""
+        mailbox = email_data.get("mailbox") or ""
 
         escaped_subject = html.escape(subject)
         escaped_from_name = html.escape(from_name)
@@ -164,7 +164,7 @@ async def send_telegram_notification(self, user_telegram_id: int, email_data: di
         escaped_mailbox = html.escape(mailbox)
 
         otp = email_data.get("otp")
-        otp_prefix = f"🔑 <b>Verification Code:</b> <code>{html.escape(otp)}</code>\n\n" if otp else ""
+        otp_prefix = f"🔑 <b>Verification Code:</b> <code>{html.escape(otp or '')}</code>\n\n" if otp else ""
 
         text = (
             f"{otp_prefix}📩 <b>New Email Received</b>\n\n"

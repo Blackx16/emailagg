@@ -251,8 +251,8 @@ async def register_oauth_account(
     except Exception:
         pass  # Don't fail the OAuth flow if notification fails
 
-    safe_provider = html.escape(provider.capitalize())
-    safe_email = html.escape(email)
+    safe_provider = html.escape(provider.capitalize() if provider else "Unknown")
+    safe_email = html.escape(email if email else "")
 
     return HTMLResponse(
         content=f"""
