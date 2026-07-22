@@ -1,20 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { Inbox, Activity, SlidersHorizontal, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { Account, EmailItem } from "../types/dashboard";
 
-import Header from "../components/dashboard/Header";
 import DevLogin from "../components/dashboard/DevLogin";
 import InboxTab from "../components/dashboard/InboxTab";
 import MailboxesTab from "../components/dashboard/MailboxesTab";
 import RulesTab from "../components/dashboard/RulesTab";
+import BottomNav, { TabType } from "../components/dashboard/BottomNav";
+
+const TABS: TabType[] = ["inbox", "mailboxes", "rules"];
 
 export default function Dashboard() {
-  const { user, token, loading: authLoading, error, isTelegramWebApp, tgWebApp, loginManual, logout, retryLogin } = useAuth();
+  const { user, token, loading: authLoading, error, isTelegramWebApp, loginManual, logout } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"inbox" | "mailboxes" | "rules">("inbox");
+  const [activeTab, setActiveTab] = useState<TabType>("inbox");
   const [dataLoading, setDataLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -44,6 +46,77 @@ export default function Dashboard() {
   const [emailDetailLoading, setEmailDetailLoading] = useState(false);
   const [emailDetail, setEmailDetail] = useState<any>(null);
   const [emailBodyView, setEmailBodyView] = useState<"html" | "text">("html");
+
+  // Disable vertical swipes on mount to prevent Telegram Mini App closure
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const tg = (window as any).Telegram?.WebApp;
+      if (tg && typeof tg.disableVerticalSwipes === "function") {
+        try {
+          tg.disableVerticalSwipes();
+        } catch (e) {
+          console.warn("Failed to call disableVerticalSwipes:", e);
+        }
+      }
+    }
+  }, []);
+
+  // Swipe Gesture Handling
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const triggerHaptic = () => {
+    if (typeof window !== "undefined") {
+      const tg = (window as any).Telegram?.WebApp;
+      if (tg?.HapticFeedback) {
+        try {
+          if (typeof tg.HapticFeedback.selectionChanged === "function") {
+            tg.HapticFeedback.selectionChanged();
+          }
+        } catch (e) {}
+      }
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current || e.changedTouches.length !== 1) return;
+
+    const startX = touchStartRef.current.x;
+    const startY = touchStartRef.current.y;
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    touchStartRef.current = null;
+
+    const deltaX = endX - startX;
+    const deltaY = endY - startY;
+
+    // Ignore if vertical scrolling dominates
+    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+
+    // Minimum swipe distance threshold (60px)
+    if (Math.abs(deltaX) >= 60) {
+      const currentIndex = TABS.indexOf(activeTab);
+      if (deltaX < 0 && currentIndex < TABS.length - 1) {
+        // Swipe Left -> next tab
+        const nextTab = TABS[currentIndex + 1];
+        setActiveTab(nextTab);
+        triggerHaptic();
+      } else if (deltaX > 0 && currentIndex > 0) {
+        // Swipe Right -> previous tab
+        const prevTab = TABS[currentIndex - 1];
+        setActiveTab(prevTab);
+        triggerHaptic();
+      }
+    }
+  };
 
   const fetchData = useCallback(async (isRefresh = false) => {
     if (!token) return;
@@ -287,7 +360,7 @@ export default function Dashboard() {
 
   if (authLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
+      <div className="flex-1 flex flex-col items-center justify-center min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
         <Loader2 className="h-8 w-8 text-indigo-500 animate-spin mb-4" />
         <h1 className="text-xl font-bold text-[var(--text-primary)] tracking-wide">EmailAgg</h1>
         <p className="text-sm text-[var(--text-tertiary)]">Initializing connection...</p>
@@ -295,7 +368,7 @@ export default function Dashboard() {
     );
   }
 
-  // Check if we're in the Telegram environment even if isTelegramWebApp is false (e.g. initData missing)
+  // Check if we're in the Telegram environment even if isTelegramWebApp is false
   const isInsideTelegram = typeof window !== 'undefined' && 
                            (window as any).Telegram && 
                            (window as any).Telegram.WebApp && 
@@ -304,7 +377,7 @@ export default function Dashboard() {
 
   if (!token && (isTelegramWebApp || isInsideTelegram)) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center" style={{ backgroundColor: 'var(--bg)' }}>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
         <h2 className="text-lg font-bold text-rose-400 mb-2">Session Expired</h2>
         <p className="text-sm text-[var(--text-secondary)] max-w-sm mb-6">
           Your session has been logged out or could not be verified. {error}
@@ -313,7 +386,7 @@ export default function Dashboard() {
           onClick={() => {
             window.location.reload();
           }}
-          className="flex items-center space-x-2 py-2.5 px-6 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg focus:outline-none transition duration-200 shadow-md"
+          className="flex items-center space-x-2 py-2.5 px-6 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg focus:outline-none transition duration-200 shadow-md cursor-pointer"
         >
           <span>Log back in seamlessly</span>
         </button>
@@ -325,47 +398,13 @@ export default function Dashboard() {
     return <DevLogin error={error} loginManual={loginManual} />;
   }
 
+  const activeTabIndex = TABS.indexOf(activeTab);
+
   return (
-    <div className="flex-1 flex flex-col min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
-      <Header user={user} refreshing={refreshing} fetchData={fetchData} logout={logout} />
+    <div className="flex-1 flex flex-col min-h-screen relative" style={{ backgroundColor: 'var(--bg)' }}>
+      {/* Top Header removed per Requirement R1 */}
 
-      <main className="flex-1 p-4 md:p-6 w-full max-w-[1400px] mx-auto">
-        <div className="flex items-center space-x-1.5 mb-6 glass p-1.5 rounded-xl border border-[var(--border)] inline-flex shadow-sm">
-          <button
-            onClick={() => setActiveTab("inbox")}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
-              activeTab === "inbox" 
-                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm" 
-                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
-            }`}
-          >
-            <Inbox className="h-4 w-4" />
-            <span>Unified Inbox</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("mailboxes")}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
-              activeTab === "mailboxes" 
-                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm" 
-                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
-            }`}
-          >
-            <Activity className="h-4 w-4" />
-            <span>Mailboxes & Settings</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("rules")}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
-              activeTab === "rules" 
-                ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm" 
-                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
-            }`}
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            <span>Forwarding Rules</span>
-          </button>
-        </div>
-
+      <main className="flex-1 p-4 md:p-6 w-full max-w-[1400px] mx-auto pb-28 md:pb-32 overflow-hidden">
         {dataLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="h-8 w-8 text-indigo-500 animate-spin mb-4" />
@@ -374,67 +413,94 @@ export default function Dashboard() {
             </p>
           </div>
         ) : (
-          <>
-            {activeTab === "inbox" && (
-              <InboxTab
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                handleSearchSubmit={handleSearchSubmit}
-                handleClearSearch={handleClearSearch}
-                activeSearch={activeSearch}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                providerFilter={providerFilter}
-                setProviderFilter={setProviderFilter}
-                mailboxFilter={mailboxFilter}
-                setMailboxFilter={setMailboxFilter}
-                accounts={accounts}
-                emails={emails}
-                selectedEmail={selectedEmail}
-                setSelectedEmail={setSelectedEmail}
-                handleSelectEmail={handleSelectEmail}
-                page={page}
-                handlePageChange={handlePageChange}
-                limit={limit}
-                totalPages={totalPages}
-                totalEmails={totalEmails}
-                emailDetailLoading={emailDetailLoading}
-                emailDetail={emailDetail}
-                emailBodyView={emailBodyView}
-                setEmailBodyView={setEmailBodyView}
-                setActiveTab={setActiveTab}
-              />
-            )}
-            {activeTab === "mailboxes" && (
-              <MailboxesTab
-                user={user}
-                token={token}
-                accounts={accounts}
-                notifLimitEffective={notifLimitEffective}
-                notifLimitFloor={notifLimitFloor}
-                notifLimitInput={notifLimitInput}
-                setNotifLimitInput={setNotifLimitInput}
-                notifLimitSaving={notifLimitSaving}
-                saveNotifLimit={saveNotifLimit}
-                handleMassTogglePreference={handleMassTogglePreference}
-                handleTogglePreference={handleTogglePreference}
-                handleDisconnect={handleDisconnect}
-                handleOAuthConnect={handleOAuthConnect}
-                fetchData={fetchData}
-              />
-            )}
-            {activeTab === "rules" && (
-              <RulesTab
-                token={token}
-                accounts={accounts}
-                rules={rules}
-                rulesLoading={rulesLoading}
-                fetchData={fetchData}
-              />
-            )}
-          </>
+          <div 
+            className="w-full overflow-hidden"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div 
+              className="flex w-[300%] transition-transform duration-300 ease-out"
+              style={{
+                transform: `translateX(-${activeTabIndex * 33.333333}%)`
+              }}
+            >
+              {/* Tab 0: Unified Inbox */}
+              <div className="w-1/3 shrink-0 px-0.5">
+                <InboxTab
+                  onRefresh={() => fetchData(true)}
+                  isRefreshing={refreshing}
+                  refreshing={refreshing}
+                  fetchData={fetchData}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  handleSearchSubmit={handleSearchSubmit}
+                  handleClearSearch={handleClearSearch}
+                  activeSearch={activeSearch}
+                  statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter}
+                  providerFilter={providerFilter}
+                  setProviderFilter={setProviderFilter}
+                  mailboxFilter={mailboxFilter}
+                  setMailboxFilter={setMailboxFilter}
+                  accounts={accounts}
+                  emails={emails}
+                  selectedEmail={selectedEmail}
+                  setSelectedEmail={setSelectedEmail}
+                  handleSelectEmail={handleSelectEmail}
+                  page={page}
+                  handlePageChange={handlePageChange}
+                  limit={limit}
+                  totalPages={totalPages}
+                  totalEmails={totalEmails}
+                  emailDetailLoading={emailDetailLoading}
+                  emailDetail={emailDetail}
+                  emailBodyView={emailBodyView}
+                  setEmailBodyView={setEmailBodyView}
+                  setActiveTab={setActiveTab}
+                />
+              </div>
+
+              {/* Tab 1: Mailboxes & Settings */}
+              <div className="w-1/3 shrink-0 px-0.5">
+                <MailboxesTab
+                  user={user}
+                  token={token}
+                  accounts={accounts}
+                  notifLimitEffective={notifLimitEffective}
+                  notifLimitFloor={notifLimitFloor}
+                  notifLimitInput={notifLimitInput}
+                  setNotifLimitInput={setNotifLimitInput}
+                  notifLimitSaving={notifLimitSaving}
+                  saveNotifLimit={saveNotifLimit}
+                  handleMassTogglePreference={handleMassTogglePreference}
+                  handleTogglePreference={handleTogglePreference}
+                  handleDisconnect={handleDisconnect}
+                  handleOAuthConnect={handleOAuthConnect}
+                  fetchData={fetchData}
+                  logout={logout}
+                />
+              </div>
+
+              {/* Tab 2: Forwarding Rules */}
+              <div className="w-1/3 shrink-0 px-0.5">
+                <RulesTab
+                  token={token}
+                  accounts={accounts}
+                  rules={rules}
+                  rulesLoading={rulesLoading}
+                  fetchData={fetchData}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </main>
+
+      {/* Floating Translucent Bottom Navigation Bar per Requirement R2 */}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
     </div>
   );
 }

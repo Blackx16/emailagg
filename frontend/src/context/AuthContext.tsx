@@ -75,8 +75,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           wa.ready();
           wa.expand();
+          if (typeof wa.disableVerticalSwipes === "function") {
+            wa.disableVerticalSwipes();
+          }
         } catch (e) {
-          console.warn("Failed to call Telegram WebApp SDK ready/expand:", e);
+          console.warn("Failed to call Telegram WebApp SDK ready/expand/disableVerticalSwipes:", e);
         }
         
         try {

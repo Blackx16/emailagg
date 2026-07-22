@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Search, Inbox, Clock, ChevronLeft, ChevronRight, Plus, ChevronDown, X } from "lucide-react";
+import { Search, Inbox, Clock, ChevronLeft, ChevronRight, Plus, ChevronDown, X, RefreshCw } from "lucide-react";
 import { Account, EmailItem } from "../../types/dashboard";
 import EmailDetail from "./EmailDetail";
 
@@ -95,6 +95,10 @@ function FilterDropdown({ value, options, onChange, label, className = "" }: any
 }
 
 interface InboxTabProps {
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+  refreshing?: boolean;
+  fetchData?: (isRefresh?: boolean) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   handleSearchSubmit: (e: React.FormEvent) => void;
@@ -124,6 +128,7 @@ interface InboxTabProps {
 }
 
 export default function InboxTab({
+  onRefresh, isRefreshing, refreshing, fetchData,
   searchQuery, setSearchQuery, handleSearchSubmit, handleClearSearch, activeSearch,
   statusFilter, setStatusFilter, providerFilter, setProviderFilter, mailboxFilter, setMailboxFilter,
   accounts, emails, selectedEmail, setSelectedEmail, handleSelectEmail,
@@ -131,6 +136,15 @@ export default function InboxTab({
   emailDetailLoading, emailDetail, emailBodyView, setEmailBodyView,
   setActiveTab
 }: InboxTabProps) {
+  const handleRefreshClick = () => {
+    if (onRefresh) {
+      onRefresh();
+    } else if (fetchData) {
+      fetchData(true);
+    }
+  };
+
+  const refreshingActive = isRefreshing ?? refreshing ?? false;
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
@@ -155,6 +169,16 @@ export default function InboxTab({
         </form>
 
         <div className="flex items-center space-x-2 pb-1 md:pb-0">
+          <button
+            type="button"
+            onClick={handleRefreshClick}
+            disabled={refreshingActive}
+            className="p-2.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition duration-150 cursor-pointer shrink-0 disabled:opacity-50"
+            title="Refresh Inbox"
+            aria-label="Refresh Inbox"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshingActive ? "animate-spin text-indigo-400" : ""}`} />
+          </button>
           <FilterDropdown
             value={statusFilter}
             onChange={setStatusFilter}

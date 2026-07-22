@@ -1,6 +1,11 @@
 import React, { useState } from "react";
-import { Activity, BellRing, SlidersHorizontal, Loader2, Trash2, AlertCircle, Plus, Inbox, Bell, Send } from "lucide-react";
+import { 
+  Activity, BellRing, SlidersHorizontal, Loader2, Trash2, AlertCircle, Plus, 
+  Inbox, Bell, Send, Sun, Moon, ShieldCheck, Zap, LogOut 
+} from "lucide-react";
 import { Account } from "../../types/dashboard";
+import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 
 /* ---- Official brand logos as inline SVGs ---- */
 function MicrosoftOutlookLogo({ className = "" }: { className?: string }) {
@@ -76,13 +81,20 @@ interface MailboxesTabProps {
   handleDisconnect: (accountId: string) => void;
   handleOAuthConnect: (provider: "google" | "microsoft") => void;
   fetchData: () => void;
+  logout?: () => void;
 }
 
 export default function MailboxesTab({
-  user, token, accounts,
+  user: userProp, token, accounts,
   notifLimitEffective, notifLimitFloor, notifLimitInput, setNotifLimitInput, notifLimitSaving, saveNotifLimit,
-  handleMassTogglePreference, handleTogglePreference, handleDisconnect, handleOAuthConnect, fetchData
+  handleMassTogglePreference, handleTogglePreference, handleDisconnect, handleOAuthConnect, fetchData,
+  logout: logoutProp
 }: MailboxesTabProps) {
+  const { theme, toggleTheme } = useTheme();
+  const { user: authUser, logout: authLogout } = useAuth();
+  const user = userProp || authUser;
+  const handleLogout = logoutProp || authLogout;
+
   const [showImapDialog, setShowImapDialog] = useState(false);
   const [imapHost, setImapHost] = useState("");
   const [imapPort, setImapPort] = useState("993");
@@ -135,259 +147,379 @@ export default function MailboxesTab({
   const allForwardEnabled = activeAccounts.length > 0 && activeAccounts.every(a => a.forward_enabled);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-4xl mx-auto">
       
-      {/* Global Settings & Controls Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 mb-2 rounded-xl glass border border-[var(--border)] divide-y lg:divide-y-0 lg:divide-x divide-[var(--border)] shadow-md">
-        
-        {/* Accounts limits */}
-        <div className="flex flex-col justify-between text-left p-5">
-          <div className="space-y-1 mb-4">
-            <h3 className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-              <Activity className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-              Limit Tracking
-            </h3>
-            <p className="text-[10px] text-[var(--text-secondary)]">
-              Plan boundaries governed by subscription.
-            </p>
-          </div>
-          <div className="flex items-end justify-between mt-auto">
-            <span className="text-2xl font-black text-[var(--text-primary)] leading-none tracking-tight">
-              {activeAccounts.length}
-            </span>
-            <span className="text-xs text-[var(--text-tertiary)] font-bold mb-0.5">
-              / {user?.plan === "free" ? 3 : user?.plan === "pro" ? 25 : 100} limit
-            </span>
+      {/* SECTION 1: APPEARANCE */}
+      <div>
+        <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
+          <Sun className="h-3.5 w-3.5 text-indigo-400" />
+          Appearance
+        </h3>
+        <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] shadow-sm p-4 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-bold text-[var(--text-primary)]">App Theme</h4>
+              <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                Switch between Dark Mode (#000000) and Notion Off-White Theme (#F7F7F5)
+              </p>
+            </div>
+            <div className="flex items-center p-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl space-x-1 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => { if (theme !== "dark") toggleTheme(); }}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  theme === "dark"
+                    ? "bg-[var(--bg-elevated)] text-indigo-400 shadow-sm border border-[var(--border-strong)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                <Moon className="h-3.5 w-3.5" />
+                <span>Dark</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { if (theme !== "light") toggleTheme(); }}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  theme === "light"
+                    ? "bg-[var(--bg-elevated)] text-indigo-500 shadow-sm border border-[var(--border-strong)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                <Sun className="h-3.5 w-3.5 text-amber-500" />
+                <span>Notion Off-White</span>
+              </button>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Notification Throttle */}
-        <div className="flex flex-col text-left p-5 space-y-3 justify-between">
-          <div>
-            <div className="flex items-start justify-between mb-1">
-              <h3 className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                <BellRing className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-                Throttle
-              </h3>
-              <span className="text-[9px] text-[var(--text-tertiary)] bg-[var(--bg-surface)] border border-[var(--border)] px-1.5 py-0.5 rounded shrink-0 ml-2">
-                <b className="text-indigo-500">{notifLimitEffective}</b>/hr effective
+      {/* SECTION 2: ACCOUNT & SESSION */}
+      <div>
+        <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5 text-indigo-400" />
+          Account & Session
+        </h3>
+        <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] shadow-sm p-4 space-y-4 divide-y divide-[var(--border)]">
+          {/* Row 1: Telegram Identity */}
+          <div className="flex items-center justify-between pb-3">
+            <div className="flex items-center space-x-3">
+              <div className="h-9 w-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[var(--text-primary)]">Connected Telegram ID</h4>
+                <p className="text-[10px] text-[var(--text-secondary)]">Authenticated via Telegram WebApp</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-bold text-[var(--text-primary)]">
+                ID: {user?.telegram_id || "Unknown"}
               </span>
             </div>
-            <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">
-              Max Telegram alerts. Floor is <span className="text-indigo-500 font-bold">{notifLimitFloor}/hr</span>.
-            </p>
           </div>
-          <div className="flex items-center space-x-2 mt-auto pt-2">
-            <input
-              type="number"
-              min={1}
-              value={notifLimitInput}
-              onChange={(e) => setNotifLimitInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && saveNotifLimit()}
-              className="w-16 px-2 py-1.5 text-xs bg-[var(--bg-surface)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:border-indigo-500 text-center shadow-inner"
-            />
+
+          {/* Row 2: Plan Badge */}
+          <div className="flex items-center justify-between pt-3 pb-3">
+            <div className="flex items-center space-x-3">
+              <div className="h-9 w-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
+                <Zap className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[var(--text-primary)]">Subscription Plan</h4>
+                <p className="text-[10px] text-[var(--text-secondary)]">Current account access level</p>
+              </div>
+            </div>
+            <span className="text-xs font-black tracking-wider uppercase px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-800/40 text-cyan-400">
+              {user?.plan ? `${user.plan} plan` : "Free plan"}
+            </span>
+          </div>
+
+          {/* Row 3: Log Out */}
+          <div className="flex items-center justify-between pt-3">
+            <div className="flex items-center space-x-3">
+              <div className="h-9 w-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                <LogOut className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[var(--text-primary)]">Session Management</h4>
+                <p className="text-[10px] text-[var(--text-secondary)]">Disconnect your session on this client</p>
+              </div>
+            </div>
             <button
-              onClick={saveNotifLimit}
-              disabled={notifLimitSaving}
-              className="px-3 py-1.5 rounded-lg bg-[var(--accent-muted)] hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition cursor-pointer disabled:opacity-50"
+              type="button"
+              onClick={() => {
+                if (confirm("Are you sure you want to log out?")) {
+                  handleLogout();
+                }
+              }}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 text-xs font-bold transition cursor-pointer"
             >
-              {notifLimitSaving ? "..." : "Save"}
+              <LogOut className="h-3.5 w-3.5" />
+              <span>Log Out</span>
             </button>
-            {parseInt(notifLimitInput) < notifLimitFloor && (
-              <span className="text-[9px] text-amber-500/80 ml-auto flex items-center"><AlertCircle className="w-3 h-3 mr-0.5"/>Floor</span>
-            )}
           </div>
         </div>
+      </div>
 
-        {/* Mass Controls — always horizontal */}
-        <div className={`flex flex-col text-left p-5 justify-between ${activeAccounts.length === 0 ? "opacity-40" : ""}`}>
-          <div>
-            <h3 className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5 mb-1">
-              <SlidersHorizontal className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-              Mass Controls
-            </h3>
-            <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">
-              {activeAccounts.length === 0 ? "No active mailboxes." : "Apply preferences to all active mailboxes."}
-            </p>
+      {/* SECTION 3: THROTTLE & LIMITS */}
+      <div>
+        <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
+          <BellRing className="h-3.5 w-3.5 text-indigo-400" />
+          Throttle & Limits
+        </h3>
+        <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] shadow-sm p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 divide-y md:divide-y-0 md:divide-x divide-[var(--border)]">
+            {/* Limit Tracking */}
+            <div className="flex flex-col justify-between space-y-2 pr-0 md:pr-4">
+              <div>
+                <h4 className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                  <Activity className="h-4 w-4 text-indigo-400" />
+                  Connected Mailbox Limit
+                </h4>
+                <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                  Mailbox allocation bound to subscription plan.
+                </p>
+              </div>
+              <div className="flex items-end justify-between pt-2">
+                <span className="text-2xl font-black text-[var(--text-primary)] leading-none tracking-tight">
+                  {activeAccounts.length}
+                </span>
+                <span className="text-xs text-[var(--text-tertiary)] font-bold">
+                  / {user?.plan === "free" ? 3 : user?.plan === "pro" ? 25 : 100} limit
+                </span>
+              </div>
+            </div>
+
+            {/* Throttle Rate */}
+            <div className="flex flex-col justify-between space-y-2 pt-4 md:pt-0 pl-0 md:pl-4">
+              <div>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                    <BellRing className="h-4 w-4 text-indigo-400" />
+                    Telegram Alert Limit
+                  </h4>
+                  <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">
+                    {notifLimitEffective}/hr effective
+                  </span>
+                </div>
+                <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                  Max alerts per hour. Floor is <span className="text-indigo-400 font-bold">{notifLimitFloor}/hr</span>.
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 pt-2">
+                <input
+                  type="number"
+                  min={1}
+                  value={notifLimitInput}
+                  onChange={(e) => setNotifLimitInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && saveNotifLimit()}
+                  className="w-20 px-2.5 py-1.5 text-xs bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl text-[var(--text-primary)] text-center shadow-inner focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={saveNotifLimit}
+                  disabled={notifLimitSaving}
+                  className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-500 text-xs font-bold focus:outline-none transition cursor-pointer disabled:opacity-50"
+                >
+                  {notifLimitSaving ? "..." : "Save"}
+                </button>
+                {parseInt(notifLimitInput) < notifLimitFloor && (
+                  <span className="text-[9px] text-amber-400 flex items-center ml-auto">
+                    <AlertCircle className="w-3 h-3 mr-0.5" />Floor
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          
-          {activeAccounts.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-[var(--text-secondary)] mt-4 pt-3 border-t border-[var(--border)]">
-              <label className="flex items-center space-x-2 cursor-pointer select-none group py-1" title="Dash Delivery for all">
-                <input
-                  type="checkbox"
-                  checked={allDashEnabled}
-                  onChange={(e) => handleMassTogglePreference("deliver_to_dashboard", e.target.checked)}
-                  className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
-                />
-                <div className="flex items-center group-hover:text-[var(--text-primary)] transition-colors">
-                  <Inbox className="w-3.5 h-3.5 mr-1" />
-                  <span>Dash</span>
-                </div>
-              </label>
+        </div>
+      </div>
 
-              <label className="flex items-center space-x-2 cursor-pointer select-none group py-1" title="Telegram Alerts for all">
-                <input
-                  type="checkbox"
-                  checked={allAlertsEnabled}
-                  onChange={(e) => handleMassTogglePreference("notify_telegram", e.target.checked)}
-                  className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
-                />
-                <div className="flex items-center group-hover:text-[var(--text-primary)] transition-colors">
-                  <Bell className="w-3.5 h-3.5 mr-1" />
-                  <span>Alerts</span>
-                </div>
-              </label>
+      {/* SECTION 4: MASS CONTROLS & CONNECTED ACCOUNTS */}
+      <div>
+        <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
+          <SlidersHorizontal className="h-3.5 w-3.5 text-indigo-400" />
+          Mailbox Preferences & Connected Accounts
+        </h3>
+        <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] shadow-sm p-4 space-y-4">
+          {/* Mass Controls Bar */}
+          <div className="p-3.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-bold text-[var(--text-primary)]">Mass Controls</h4>
+              <p className="text-[10px] text-[var(--text-secondary)]">Apply preferences to all active connected mailboxes</p>
+            </div>
 
-              <label className="flex items-center space-x-2 cursor-pointer select-none group py-1" title="Email Forwarding for all">
-                <input
-                  type="checkbox"
-                  checked={allForwardEnabled}
-                  onChange={(e) => handleMassTogglePreference("forward_enabled", e.target.checked)}
-                  className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
-                />
-                <div className="flex items-center group-hover:text-[var(--text-primary)] transition-colors">
-                  <Send className="w-3.5 h-3.5 mr-1" />
-                  <span>Fwd</span>
+            {activeAccounts.length > 0 ? (
+              <div className="flex items-center space-x-3 text-xs font-semibold text-[var(--text-secondary)]">
+                <label className="flex items-center space-x-1.5 cursor-pointer select-none group" title="Dash Delivery for all">
+                  <input
+                    type="checkbox"
+                    checked={allDashEnabled}
+                    onChange={(e) => handleMassTogglePreference("deliver_to_dashboard", e.target.checked)}
+                    className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] cursor-pointer h-4 w-4"
+                  />
+                  <span className="group-hover:text-[var(--text-primary)] transition">Dash</span>
+                </label>
+
+                <label className="flex items-center space-x-1.5 cursor-pointer select-none group" title="Telegram Alerts for all">
+                  <input
+                    type="checkbox"
+                    checked={allAlertsEnabled}
+                    onChange={(e) => handleMassTogglePreference("notify_telegram", e.target.checked)}
+                    className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] cursor-pointer h-4 w-4"
+                  />
+                  <span className="group-hover:text-[var(--text-primary)] transition">Alerts</span>
+                </label>
+
+                <label className="flex items-center space-x-1.5 cursor-pointer select-none group" title="Email Forwarding for all">
+                  <input
+                    type="checkbox"
+                    checked={allForwardEnabled}
+                    onChange={(e) => handleMassTogglePreference("forward_enabled", e.target.checked)}
+                    className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] cursor-pointer h-4 w-4"
+                  />
+                  <span className="group-hover:text-[var(--text-primary)] transition">Fwd</span>
+                </label>
+              </div>
+            ) : (
+              <span className="text-[10px] text-[var(--text-tertiary)] italic">No active accounts</span>
+            )}
+          </div>
+
+          {/* Account Cards */}
+          {activeAccounts.length === 0 ? (
+            <div className="p-6 text-center rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-secondary)] text-xs">
+              No active mailboxes connected yet. Add an account below to get started.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {activeAccounts.map((acc) => (
+                <div key={acc.id} className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] flex flex-col justify-between min-h-[170px] space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className={`text-[8px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded ${
+                        acc.provider === "microsoft" ? "bg-blue-950/60 border border-blue-900/40 text-blue-400" :
+                        acc.provider === "google" ? "bg-red-950/60 border border-red-900/40 text-red-400" :
+                        "bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-secondary)]"
+                      }`}>
+                        {acc.provider}
+                      </span>
+                      <h4 className="text-xs font-bold text-[var(--text-primary)] mt-2 truncate max-w-[200px]" title={acc.email}>
+                        {acc.email}
+                      </h4>
+                    </div>
+
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center ${
+                      acc.status === "active" ? "bg-emerald-900/20 border border-emerald-900/30 text-emerald-400" :
+                      acc.status === "syncing" ? "bg-indigo-900/20 border border-indigo-900/30 text-indigo-400" :
+                      acc.status === "error" ? "bg-rose-900/20 border border-rose-900/30 text-rose-400 animate-pulse" :
+                      "bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-secondary)]"
+                    }`}>
+                      {acc.status === "syncing" && <Loader2 className="h-3 w-3 animate-spin mr-1 text-indigo-400 shrink-0" />}
+                      {acc.status === "active" && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 mr-1.5 shrink-0" />}
+                      {acc.status === "error" && <AlertCircle className="h-3 w-3 mr-1 text-rose-400 shrink-0" />}
+                      {acc.status.toUpperCase()}
+                    </span>
+                  </div>
+
+                  {/* Preferences Toggles */}
+                  <div className="pt-2 border-t border-[var(--border)] grid grid-cols-3 gap-1.5 text-[10px] font-semibold text-[var(--text-secondary)]">
+                    <label className="flex items-center space-x-1.5 cursor-pointer select-none py-1 group" title="Show incoming emails on dashboard">
+                      <input
+                        type="checkbox"
+                        checked={acc.deliver_to_dashboard}
+                        onChange={(e) => handleTogglePreference(acc.id, "deliver_to_dashboard", e.target.checked)}
+                        className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] cursor-pointer h-3.5 w-3.5"
+                      />
+                      <div className="flex items-center group-hover:text-[var(--text-primary)] transition-colors">
+                        <Inbox className="w-3 h-3 mr-0.5" />
+                        <span>Dash</span>
+                      </div>
+                    </label>
+                    <label className="flex items-center space-x-1.5 cursor-pointer select-none py-1 group" title="Send alerts to your Telegram bot">
+                      <input
+                        type="checkbox"
+                        checked={acc.notify_telegram}
+                        onChange={(e) => handleTogglePreference(acc.id, "notify_telegram", e.target.checked)}
+                        className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] cursor-pointer h-3.5 w-3.5"
+                      />
+                      <div className="flex items-center group-hover:text-[var(--text-primary)] transition-colors">
+                        <Bell className="w-3 h-3 mr-0.5" />
+                        <span>Alerts</span>
+                      </div>
+                    </label>
+                    <label className="flex items-center space-x-1.5 cursor-pointer select-none py-1 group" title="Enable custom email forwarding rules">
+                      <input
+                        type="checkbox"
+                        checked={acc.forward_enabled}
+                        onChange={(e) => handleTogglePreference(acc.id, "forward_enabled", e.target.checked)}
+                        className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] cursor-pointer h-3.5 w-3.5"
+                      />
+                      <div className="flex items-center group-hover:text-[var(--text-primary)] transition-colors">
+                        <Send className="w-3 h-3 mr-0.5" />
+                        <span>Fwd</span>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-[var(--border)] pt-2.5">
+                    <span className="text-[9px] text-[var(--text-tertiary)]">
+                      Sync: {acc.last_sync ? new Date(acc.last_sync).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Never"}
+                    </span>
+                    
+                    <button
+                      type="button"
+                      onClick={() => handleDisconnect(acc.id)}
+                      className="p-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-rose-400 hover:border-rose-900/30 hover:bg-rose-900/10 focus:outline-none transition cursor-pointer"
+                      title="Disconnect Mailbox"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </label>
+              ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* List of Connected Mailboxes */}
+      {/* SECTION 5: ADD MAILBOX */}
       <div>
-        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-          Connected Mailboxes
-        </h2>
-
-        {activeAccounts.length === 0 ? (
-          <div className="p-8 text-center glass-card rounded-xl border border-[var(--border)] text-[var(--text-secondary)] text-xs mb-6">
-            No active mailboxes connected. Add an account below to begin.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {activeAccounts.map((acc) => (
-              <div key={acc.id} className="p-4 rounded-xl glass-card text-left border border-[var(--border)] flex flex-col justify-between min-h-[175px]">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className={`text-[8px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded ${
-                      acc.provider === "microsoft" ? "bg-blue-950/60 border border-blue-900/40 text-blue-400" :
-                      acc.provider === "google" ? "bg-red-950/60 border border-red-900/40 text-red-400" :
-                      "bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-secondary)]"
-                    }`}>
-                      {acc.provider}
-                    </span>
-                    <h4 className="text-xs font-bold text-[var(--text-primary)] mt-2.5 truncate max-w-[200px]" title={acc.email}>
-                      {acc.email}
-                    </h4>
-                  </div>
-
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center ${
-                    acc.status === "active" ? "bg-emerald-900/20 border border-emerald-900/30 text-emerald-400" :
-                    acc.status === "syncing" ? "bg-indigo-900/20 border border-indigo-900/30 text-indigo-400" :
-                    acc.status === "error" ? "bg-rose-900/20 border border-rose-900/30 text-rose-400 animate-pulse" :
-                    "bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-secondary)]"
-                  }`}>
-                    {acc.status === "syncing" && <Loader2 className="h-3 w-3 animate-spin mr-1 text-indigo-400 shrink-0" />}
-                    {acc.status === "active" && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 mr-1.5 shrink-0" />}
-                    {acc.status === "error" && <AlertCircle className="h-3 w-3 mr-1 text-rose-400 shrink-0" />}
-                    {acc.status.toUpperCase()}
-                  </span>
-                </div>
-
-                {/* Preferences Toggles — always horizontal */}
-                <div className="mt-4 pt-3 border-t border-[var(--border)] grid grid-cols-3 gap-2 text-[10px] font-semibold text-[var(--text-secondary)]">
-                  <label className="flex items-center space-x-1.5 cursor-pointer select-none py-1 group" title="Show incoming emails on dashboard">
-                    <input
-                      type="checkbox"
-                      checked={acc.deliver_to_dashboard}
-                      onChange={(e) => handleTogglePreference(acc.id, "deliver_to_dashboard", e.target.checked)}
-                      className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
-                    />
-                    <div className="flex items-center group-hover:text-[var(--text-primary)] transition-colors">
-                      <Inbox className="w-3.5 h-3.5 mr-1" />
-                      <span>Dash</span>
-                    </div>
-                  </label>
-                  <label className="flex items-center space-x-1.5 cursor-pointer select-none py-1 group" title="Send alerts to your Telegram bot">
-                    <input
-                      type="checkbox"
-                      checked={acc.notify_telegram}
-                      onChange={(e) => handleTogglePreference(acc.id, "notify_telegram", e.target.checked)}
-                      className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
-                    />
-                    <div className="flex items-center group-hover:text-[var(--text-primary)] transition-colors">
-                      <Bell className="w-3.5 h-3.5 mr-1" />
-                      <span>Alerts</span>
-                    </div>
-                  </label>
-                  <label className="flex items-center space-x-1.5 cursor-pointer select-none py-1 group" title="Enable custom email forwarding rules">
-                    <input
-                      type="checkbox"
-                      checked={acc.forward_enabled}
-                      onChange={(e) => handleTogglePreference(acc.id, "forward_enabled", e.target.checked)}
-                      className="accent-indigo-500 rounded bg-[var(--bg-surface)] border-[var(--border)] focus:ring-0 cursor-pointer h-4 w-4 shrink-0"
-                    />
-                    <div className="flex items-center group-hover:text-[var(--text-primary)] transition-colors">
-                      <Send className="w-3.5 h-3.5 mr-1" />
-                      <span>Forward</span>
-                    </div>
-                  </label>
-                </div>
-
-                <div className="flex items-end justify-between border-t border-[var(--border)] pt-3 mt-2.5">
-                  <span className="text-[9px] text-[var(--text-tertiary)]">
-                    Last Sync: {acc.last_sync ? new Date(acc.last_sync).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Never"}
-                  </span>
-                  
-                  <button
-                    onClick={() => handleDisconnect(acc.id)}
-                    className="p-1.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-rose-400 hover:border-rose-950/30 hover:bg-rose-950/15 focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition cursor-pointer"
-                    title="Disconnect Mailbox"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Add Mailbox — redesigned with official logos */}
-      <div className="border-t border-[var(--border)] pt-6">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+        <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
+          <Plus className="h-3.5 w-3.5 text-indigo-400" />
           Add Mailbox
-        </h2>
-        
-        <div className="grid grid-cols-1 xs:grid-cols-3 gap-3">
-          <button
-            onClick={() => handleOAuthConnect("microsoft")}
-            className="py-4 px-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-semibold flex flex-col items-center justify-center space-y-2.5 transition cursor-pointer group"
-          >
-            <MicrosoftOutlookLogo className="h-10 w-10 group-hover:scale-105 transition-transform" />
-            <span>Microsoft Outlook</span>
-          </button>
+        </h3>
+        <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] shadow-sm p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={() => handleOAuthConnect("microsoft")}
+              className="py-4 px-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-semibold flex flex-col items-center justify-center space-y-2.5 transition cursor-pointer group shadow-sm"
+            >
+              <MicrosoftOutlookLogo className="h-10 w-10 group-hover:scale-105 transition-transform" />
+              <span>Microsoft Outlook</span>
+            </button>
 
-          <button
-            onClick={() => handleOAuthConnect("google")}
-            className="py-4 px-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-semibold flex flex-col items-center justify-center space-y-2.5 transition cursor-pointer group"
-          >
-            <GmailLogo className="h-10 w-10 group-hover:scale-105 transition-transform" />
-            <span>Google Gmail</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => handleOAuthConnect("google")}
+              className="py-4 px-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-semibold flex flex-col items-center justify-center space-y-2.5 transition cursor-pointer group shadow-sm"
+            >
+              <GmailLogo className="h-10 w-10 group-hover:scale-105 transition-transform" />
+              <span>Google Gmail</span>
+            </button>
 
-          <button
-            onClick={() => setShowImapDialog(true)}
-            className="py-4 px-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-semibold flex flex-col items-center justify-center space-y-2.5 transition cursor-pointer group"
-          >
-            <div className="h-10 w-10 rounded-lg bg-[var(--accent-muted)] border border-indigo-500/20 flex items-center justify-center text-indigo-500 group-hover:scale-105 transition-transform">
-              <Plus className="h-5 w-5" />
-            </div>
-            <span>Custom IMAP SSL</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setShowImapDialog(true)}
+              className="py-4 px-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs font-semibold flex flex-col items-center justify-center space-y-2.5 transition cursor-pointer group shadow-sm"
+            >
+              <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition-transform">
+                <Plus className="h-6 w-6" />
+              </div>
+              <span>Custom IMAP SSL</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -465,7 +597,7 @@ export default function MailboxesTab({
                 <button
                   type="submit"
                   disabled={imapConnecting}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-900 text-white text-xs font-bold flex items-center space-x-2 transition cursor-pointer shadow shadow-sm shadow-black/10"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-900 text-white text-xs font-bold flex items-center space-x-2 transition cursor-pointer shadow-sm"
                 >
                   {imapConnecting && <Loader2 className="h-3 w-3 animate-spin shrink-0" />}
                   <span>Connect</span>
