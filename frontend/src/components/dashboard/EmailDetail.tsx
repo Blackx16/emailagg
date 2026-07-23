@@ -37,7 +37,7 @@ export default function EmailDetail({
         )}
       </div>
 
-      <div className="p-5 pb-28 md:pb-32 glass-card rounded-xl text-left border border-[var(--border)] max-h-[calc(100vh-180px)] overflow-y-auto flex flex-col">
+      <div className="text-left flex flex-col">
         {!selectedEmail ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
             <Mail className="h-8 w-8 text-[var(--text-tertiary)] mb-2" />

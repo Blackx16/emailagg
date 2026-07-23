@@ -405,7 +405,7 @@ export default function Dashboard() {
     <div className="flex-1 flex flex-col min-h-screen relative" style={{ backgroundColor: 'var(--bg)' }}>
       {/* Top Header removed per Requirement R1 */}
 
-      <main className="flex-1 p-4 md:p-6 w-full max-w-[1400px] mx-auto pb-28 md:pb-32 overflow-hidden">
+      <main className="flex-1 p-4 md:p-6 w-full max-w-[1400px] mx-auto pb-28 md:pb-32">
         {dataLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="h-8 w-8 text-indigo-500 animate-spin mb-4" />

@@ -149,120 +149,7 @@ export default function MailboxesTab({
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       
-      {/* SECTION 1: APPEARANCE */}
-      <div>
-        <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
-          <Sun className="h-3.5 w-3.5 text-indigo-400" />
-          Appearance
-        </h3>
-        <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] shadow-sm p-4 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h4 className="text-xs font-bold text-[var(--text-primary)]">App Theme</h4>
-              <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
-                Switch between Dark Mode (#000000) and Notion Off-White Theme (#F7F7F5)
-              </p>
-            </div>
-            <div className="flex items-center p-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl space-x-1 self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={() => { if (theme !== "dark") toggleTheme(); }}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                  theme === "dark"
-                    ? "bg-[var(--bg-elevated)] text-indigo-400 shadow-sm border border-[var(--border-strong)]"
-                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                }`}
-              >
-                <Moon className="h-3.5 w-3.5" />
-                <span>Dark</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { if (theme !== "light") toggleTheme(); }}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                  theme === "light"
-                    ? "bg-[var(--bg-elevated)] text-indigo-500 shadow-sm border border-[var(--border-strong)]"
-                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                }`}
-              >
-                <Sun className="h-3.5 w-3.5 text-amber-500" />
-                <span>Notion Off-White</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 2: ACCOUNT & SESSION */}
-      <div>
-        <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
-          <ShieldCheck className="h-3.5 w-3.5 text-indigo-400" />
-          Account & Session
-        </h3>
-        <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] shadow-sm p-4 space-y-4 divide-y divide-[var(--border)]">
-          {/* Row 1: Telegram Identity */}
-          <div className="flex items-center justify-between pb-3">
-            <div className="flex items-center space-x-3">
-              <div className="h-9 w-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-[var(--text-primary)]">Connected Telegram ID</h4>
-                <p className="text-[10px] text-[var(--text-secondary)]">Authenticated via Telegram WebApp</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-bold text-[var(--text-primary)]">
-                ID: {user?.telegram_id || "Unknown"}
-              </span>
-            </div>
-          </div>
-
-          {/* Row 2: Plan Badge */}
-          <div className="flex items-center justify-between pt-3 pb-3">
-            <div className="flex items-center space-x-3">
-              <div className="h-9 w-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
-                <Zap className="h-5 w-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-[var(--text-primary)]">Subscription Plan</h4>
-                <p className="text-[10px] text-[var(--text-secondary)]">Current account access level</p>
-              </div>
-            </div>
-            <span className="text-xs font-black tracking-wider uppercase px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-800/40 text-cyan-400">
-              {user?.plan ? `${user.plan} plan` : "Free plan"}
-            </span>
-          </div>
-
-          {/* Row 3: Log Out */}
-          <div className="flex items-center justify-between pt-3">
-            <div className="flex items-center space-x-3">
-              <div className="h-9 w-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
-                <LogOut className="h-5 w-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-[var(--text-primary)]">Session Management</h4>
-                <p className="text-[10px] text-[var(--text-secondary)]">Disconnect your session on this client</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (confirm("Are you sure you want to log out?")) {
-                  handleLogout();
-                }
-              }}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 text-xs font-bold transition cursor-pointer"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span>Log Out</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 3: THROTTLE & LIMITS */}
+      {/* SECTION 1: THROTTLE & LIMITS */}
       <div>
         <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
           <BellRing className="h-3.5 w-3.5 text-indigo-400" />
@@ -335,7 +222,7 @@ export default function MailboxesTab({
         </div>
       </div>
 
-      {/* SECTION 4: MASS CONTROLS & CONNECTED ACCOUNTS */}
+      {/* SECTION 2: MAILBOX PREFERENCES & CONNECTED ACCOUNTS */}
       <div>
         <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
           <SlidersHorizontal className="h-3.5 w-3.5 text-indigo-400" />
@@ -397,11 +284,7 @@ export default function MailboxesTab({
                 <div key={acc.id} className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)] flex flex-col justify-between min-h-[170px] space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className={`text-[8px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded ${
-                        acc.provider === "microsoft" ? "bg-blue-950/60 border border-blue-900/40 text-blue-400" :
-                        acc.provider === "google" ? "bg-red-950/60 border border-red-900/40 text-red-400" :
-                        "bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-secondary)]"
-                      }`}>
+                      <span className="text-[8px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-secondary)]">
                         {acc.provider}
                       </span>
                       <h4 className="text-xs font-bold text-[var(--text-primary)] mt-2 truncate max-w-[200px]" title={acc.email}>
@@ -483,7 +366,7 @@ export default function MailboxesTab({
         </div>
       </div>
 
-      {/* SECTION 5: ADD MAILBOX */}
+      {/* SECTION 3: ADD MAILBOX */}
       <div>
         <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
           <Plus className="h-3.5 w-3.5 text-indigo-400" />
@@ -519,6 +402,116 @@ export default function MailboxesTab({
               </div>
               <span>Custom IMAP SSL</span>
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 4: ACCOUNT & SESSION */}
+      <div>
+        <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5 text-indigo-400" />
+          Account & Session
+        </h3>
+        <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] shadow-sm p-4 space-y-4 divide-y divide-[var(--border)]">
+          {/* Row 1: Telegram Identity */}
+          <div className="flex items-center justify-between pb-3">
+            <div className="flex items-center space-x-3">
+              <div className="h-9 w-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[var(--text-primary)]">Connected Telegram ID</h4>
+                <p className="text-[10px] text-[var(--text-secondary)]">Authenticated via Telegram WebApp</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-bold text-[var(--text-primary)]">
+                ID: {user?.telegram_id || "Unknown"}
+              </span>
+            </div>
+          </div>
+
+          {/* Row 2: Plan Badge */}
+          <div className="flex items-center justify-between pt-3 pb-3">
+            <div className="flex items-center space-x-3">
+              <div className="h-9 w-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                <Zap className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[var(--text-primary)]">Subscription Plan</h4>
+                <p className="text-[10px] text-[var(--text-secondary)]">Current account access level</p>
+              </div>
+            </div>
+            <span className="text-xs font-black tracking-wider uppercase px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-primary)]">
+              {user?.plan ? `${user.plan} plan` : "Free plan"}
+            </span>
+          </div>
+
+          {/* Row 3: Log Out */}
+          <div className="flex items-center justify-between pt-3">
+            <div className="flex items-center space-x-3">
+              <div className="h-9 w-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                <LogOut className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[var(--text-primary)]">Session Management</h4>
+                <p className="text-[10px] text-[var(--text-secondary)]">Disconnect your session on this client</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm("Are you sure you want to log out?")) {
+                  handleLogout();
+                }
+              }}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 text-xs font-bold transition cursor-pointer"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span>Log Out</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 5: APPEARANCE */}
+      <div>
+        <h3 className="text-[11px] font-semibold tracking-wider text-[var(--text-tertiary)] uppercase px-1 mb-2 flex items-center gap-1.5">
+          <Sun className="h-3.5 w-3.5 text-indigo-400" />
+          App Appearance
+        </h3>
+        <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] shadow-sm p-4 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-bold text-[var(--text-primary)]">App Theme</h4>
+            </div>
+            <div className="flex items-center p-1 bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl space-x-1 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => { if (theme !== "dark") toggleTheme(); }}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  theme === "dark"
+                    ? "bg-[var(--bg-elevated)] text-indigo-400 shadow-sm border border-[var(--border-strong)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                <Moon className="h-3.5 w-3.5" />
+                <span>Dark</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { if (theme !== "light") toggleTheme(); }}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  theme === "light"
+                    ? "bg-[var(--bg-elevated)] text-indigo-500 shadow-sm border border-[var(--border-strong)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                <Sun className="h-3.5 w-3.5 text-amber-500" />
+                <span>Notion Off-White</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

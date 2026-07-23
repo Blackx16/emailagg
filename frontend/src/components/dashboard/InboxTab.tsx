@@ -25,7 +25,7 @@ function FilterDropdown({ value, options, onChange, label, className = "" }: any
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-40 bg-black/40 md:bg-transparent"
+            className="fixed inset-0 z-[60] bg-black/40 md:bg-transparent"
             onClick={() => setIsOpen(false)}
           />
 
@@ -51,8 +51,8 @@ function FilterDropdown({ value, options, onChange, label, className = "" }: any
           </div>
 
           {/* Mobile bottom sheet */}
-          <div className="md:hidden fixed inset-x-0 bottom-0 z-50 animate-slide-up">
-            <div className="bg-[var(--bg-elevated)] border-t border-[var(--border-strong)] rounded-t-2xl shadow-2xl px-2 pb-8 pt-3 max-h-[60vh] overflow-y-auto">
+          <div className="md:hidden fixed bottom-0 inset-x-0 z-[60] max-h-[85vh] overflow-y-auto animate-slide-up">
+            <div className="bg-[var(--bg-elevated)] border-t border-[var(--border-strong)] rounded-t-2xl shadow-2xl px-2 pb-24 pt-3">
               {/* Handle bar */}
               <div className="flex justify-center mb-3">
                 <div className="w-10 h-1 rounded-full bg-[var(--border-strong)]" />
@@ -267,7 +267,7 @@ export default function InboxTab({
               Inbox
             </h2>
             
-            <div className="space-y-2 overflow-y-auto max-h-[70vh] pr-1">
+            <div className="space-y-2 pr-1">
               {emails.map((email) => {
                 const dateObj = email.received_at ? new Date(email.received_at) : null;
                 const formattedTime = dateObj ? dateObj.toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
