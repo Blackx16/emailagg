@@ -414,85 +414,94 @@ export default function Dashboard() {
             </p>
           </div>
         ) : (
-          <div 
-            className="w-full overflow-hidden"
+          <div
+            className="relative w-full"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             onTouchCancel={handleTouchCancel}
+            style={{ overflow: "clip" }}
           >
-            <div 
-              className="flex w-[300%] transition-transform duration-300 ease-out"
-              style={{
-                transform: `translateX(-${activeTabIndex * 33.333333}%)`
-              }}
+            {/* Tab slide container — each tab is absolute when inactive so it doesn't
+                contribute to document height, eliminating the Mailboxes excessive-scroll bug.
+                The active tab is relative (in flow) so page height = active tab content only. */}
+            {/* Tab 0: Unified Inbox */}
+            <div
+              className={`w-full transition-transform duration-300 ease-out px-0.5 ${activeTabIndex === 0 ? "relative" : "absolute top-0 left-0 pointer-events-none"}`}
+              style={{ transform: `translateX(${(0 - activeTabIndex) * 100}%)` }}
+              aria-hidden={activeTabIndex !== 0}
             >
-              {/* Tab 0: Unified Inbox */}
-              <div className="w-1/3 shrink-0 px-0.5">
-                <InboxTab
-                  onRefresh={() => fetchData(true)}
-                  isRefreshing={refreshing}
-                  refreshing={refreshing}
-                  fetchData={fetchData}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  handleSearchSubmit={handleSearchSubmit}
-                  handleClearSearch={handleClearSearch}
-                  activeSearch={activeSearch}
-                  statusFilter={statusFilter}
-                  setStatusFilter={setStatusFilter}
-                  providerFilter={providerFilter}
-                  setProviderFilter={setProviderFilter}
-                  mailboxFilter={mailboxFilter}
-                  setMailboxFilter={setMailboxFilter}
-                  accounts={accounts}
-                  emails={emails}
-                  selectedEmail={selectedEmail}
-                  setSelectedEmail={setSelectedEmail}
-                  handleSelectEmail={handleSelectEmail}
-                  page={page}
-                  handlePageChange={handlePageChange}
-                  limit={limit}
-                  totalPages={totalPages}
-                  totalEmails={totalEmails}
-                  emailDetailLoading={emailDetailLoading}
-                  emailDetail={emailDetail}
-                  emailBodyView={emailBodyView}
-                  setEmailBodyView={setEmailBodyView}
-                  setActiveTab={setActiveTab}
-                />
-              </div>
+              <InboxTab
+                onRefresh={() => fetchData(true)}
+                isRefreshing={refreshing}
+                refreshing={refreshing}
+                fetchData={fetchData}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                handleSearchSubmit={handleSearchSubmit}
+                handleClearSearch={handleClearSearch}
+                activeSearch={activeSearch}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                providerFilter={providerFilter}
+                setProviderFilter={setProviderFilter}
+                mailboxFilter={mailboxFilter}
+                setMailboxFilter={setMailboxFilter}
+                accounts={accounts}
+                emails={emails}
+                selectedEmail={selectedEmail}
+                setSelectedEmail={setSelectedEmail}
+                handleSelectEmail={handleSelectEmail}
+                page={page}
+                handlePageChange={handlePageChange}
+                limit={limit}
+                totalPages={totalPages}
+                totalEmails={totalEmails}
+                emailDetailLoading={emailDetailLoading}
+                emailDetail={emailDetail}
+                emailBodyView={emailBodyView}
+                setEmailBodyView={setEmailBodyView}
+                setActiveTab={setActiveTab}
+              />
+            </div>
 
-              {/* Tab 1: Mailboxes & Settings */}
-              <div className="w-1/3 shrink-0 px-0.5">
-                <MailboxesTab
-                  user={user}
-                  token={token}
-                  accounts={accounts}
-                  notifLimitEffective={notifLimitEffective}
-                  notifLimitFloor={notifLimitFloor}
-                  notifLimitInput={notifLimitInput}
-                  setNotifLimitInput={setNotifLimitInput}
-                  notifLimitSaving={notifLimitSaving}
-                  saveNotifLimit={saveNotifLimit}
-                  handleMassTogglePreference={handleMassTogglePreference}
-                  handleTogglePreference={handleTogglePreference}
-                  handleDisconnect={handleDisconnect}
-                  handleOAuthConnect={handleOAuthConnect}
-                  fetchData={fetchData}
-                  logout={logout}
-                />
-              </div>
+            {/* Tab 1: Mailboxes & Settings */}
+            <div
+              className={`w-full transition-transform duration-300 ease-out px-0.5 ${activeTabIndex === 1 ? "relative" : "absolute top-0 left-0 pointer-events-none"}`}
+              style={{ transform: `translateX(${(1 - activeTabIndex) * 100}%)` }}
+              aria-hidden={activeTabIndex !== 1}
+            >
+              <MailboxesTab
+                user={user}
+                token={token}
+                accounts={accounts}
+                notifLimitEffective={notifLimitEffective}
+                notifLimitFloor={notifLimitFloor}
+                notifLimitInput={notifLimitInput}
+                setNotifLimitInput={setNotifLimitInput}
+                notifLimitSaving={notifLimitSaving}
+                saveNotifLimit={saveNotifLimit}
+                handleMassTogglePreference={handleMassTogglePreference}
+                handleTogglePreference={handleTogglePreference}
+                handleDisconnect={handleDisconnect}
+                handleOAuthConnect={handleOAuthConnect}
+                fetchData={fetchData}
+                logout={logout}
+              />
+            </div>
 
-              {/* Tab 2: Forwarding Rules */}
-              <div className="w-1/3 shrink-0 px-0.5">
-                <RulesTab
-                  token={token}
-                  accounts={accounts}
-                  rules={rules}
-                  rulesLoading={rulesLoading}
-                  fetchData={fetchData}
-                />
-              </div>
+            {/* Tab 2: Forwarding Rules */}
+            <div
+              className={`w-full transition-transform duration-300 ease-out px-0.5 ${activeTabIndex === 2 ? "relative" : "absolute top-0 left-0 pointer-events-none"}`}
+              style={{ transform: `translateX(${(2 - activeTabIndex) * 100}%)` }}
+              aria-hidden={activeTabIndex !== 2}
+            >
+              <RulesTab
+                token={token}
+                accounts={accounts}
+                rules={rules}
+                rulesLoading={rulesLoading}
+                fetchData={fetchData}
+              />
             </div>
           </div>
         )}

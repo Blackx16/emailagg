@@ -509,7 +509,7 @@ export default function MailboxesTab({
                 }`}
               >
                 <Sun className="h-3.5 w-3.5 text-amber-500" />
-                <span>Notion Off-White</span>
+                <span>White Mode</span>
               </button>
             </div>
           </div>

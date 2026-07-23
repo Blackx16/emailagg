@@ -1,14 +1,31 @@
 import React, { useRef, useEffect } from "react";
-import { Search, Inbox, Clock, ChevronLeft, ChevronRight, Plus, ChevronDown, X, RefreshCw } from "lucide-react";
+import { Search, Inbox, Clock, ChevronLeft, ChevronRight, Plus, ChevronDown, RefreshCw } from "lucide-react";
 import { Account, EmailItem } from "../../types/dashboard";
 import EmailDetail from "./EmailDetail";
 
 function FilterDropdown({ value, options, onChange, label, className = "" }: any) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const selectedLabel = options.find((o: any) => o.value === value)?.label || label;
 
+  // Close on outside click/tap
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, [isOpen]);
+
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -16,79 +33,30 @@ function FilterDropdown({ value, options, onChange, label, className = "" }: any
       >
         {selectedLabel}
         <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-          <ChevronDown className={`w-3.5 h-3.5 text-[var(--text-tertiary)] transition-transform ${isOpen ? "rotate-180" : ""}`} />
+          <ChevronDown className={`w-3.5 h-3.5 text-[var(--text-tertiary)] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
         </span>
       </button>
 
-      {/* Mobile: bottom sheet. Desktop: inline dropdown */}
       {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-[60] bg-black/40 md:bg-transparent"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Desktop dropdown */}
-          <div className="hidden md:block absolute z-50 mt-1 w-full bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-lg shadow-2xl overflow-hidden min-w-max">
-            {options.map((opt: any) => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`block w-full text-left px-3 py-2.5 text-xs transition-colors ${
-                  value === opt.value
-                    ? "bg-[var(--accent-muted)] text-[var(--text-primary)] font-semibold"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                }`}
-                onClick={() => {
-                  onChange(opt.value);
-                  setIsOpen(false);
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Mobile bottom sheet */}
-          <div className="md:hidden fixed bottom-0 inset-x-0 z-[60] max-h-[85vh] overflow-y-auto animate-slide-up">
-            <div className="bg-[var(--bg-elevated)] border-t border-[var(--border-strong)] rounded-t-2xl shadow-2xl px-2 pb-24 pt-3">
-              {/* Handle bar */}
-              <div className="flex justify-center mb-3">
-                <div className="w-10 h-1 rounded-full bg-[var(--border-strong)]" />
-              </div>
-              {/* Header */}
-              <div className="flex items-center justify-between px-3 mb-2">
-                <span className="text-sm font-semibold text-[var(--text-primary)]">{label}</span>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="p-1.5 rounded-lg hover:bg-[var(--bg-hover)] text-[var(--text-tertiary)] cursor-pointer transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              {/* Options */}
-              {options.map((opt: any) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className={`block w-full text-left px-4 py-3.5 text-sm rounded-lg mb-0.5 transition-colors ${
-                    value === opt.value
-                      ? "bg-[var(--accent-muted)] text-[var(--text-primary)] font-semibold"
-                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                  }`}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-xl shadow-2xl overflow-hidden animate-slide-down min-w-[160px]">
+          {options.map((opt: any) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`block w-full text-left px-4 py-3 text-sm transition-colors border-b border-[var(--border)] last:border-0 ${
+                value === opt.value
+                  ? "bg-[var(--accent-muted)] text-[var(--text-primary)] font-semibold"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+              }`}
+              onClick={() => {
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

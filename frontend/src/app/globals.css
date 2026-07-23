@@ -136,6 +136,15 @@ body {
   animation: sync-pulse 1.8s linear infinite;
 }
 
+/* Dropdown slide-down */
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-down {
+  animation: slide-down 0.15s ease-out both;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   * {
