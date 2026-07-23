@@ -154,17 +154,19 @@ async def renew_expiring_outlook_subscriptions(self):
                 continue
                 
             try:
-                # If it's already expired, don't patch, just recreate
-                if sub.status == "expired":
-                    logger.info("Recreating expired subscription for account %s", account.id)
+                # If subscription is expired or in failed state, attempt recreation instead of patch
+                if sub.status in ("expired", "failed") or sub.expiration_datetime <= now:
+                    logger.info("Recreating failed/expired subscription for account %s", account.id)
                     new_sub = await create_subscription(account, db)
                     if new_sub:
-                        # The create_subscription creates a new row, we can cancel/delete the old one
                         await db.delete(sub)
                         await db.commit()
                         recreated += 1
                     else:
+                        sub.status = "failed"
                         sub.last_error = "Failed to recreate subscription"
+                        account.status = "error"
+                        account.error_message = sub.last_error
                         await db.commit()
                         failed += 1
                     continue
@@ -190,6 +192,8 @@ async def renew_expiring_outlook_subscriptions(self):
                     else:
                         sub.status = "expired"
                         sub.last_error = "Graph returned 404 on renewal and recreation failed"
+                        account.status = "error"
+                        account.error_message = sub.last_error
                         await db.commit()
                         failed += 1
                 elif resp.status_code == 200:
@@ -197,16 +201,22 @@ async def renew_expiring_outlook_subscriptions(self):
                     sub.renewed_at = datetime.now(timezone.utc)
                     sub.last_error = None
                     sub.status = "active"
+                    account.status = "active"
+                    account.error_message = None
                     renewed += 1
                     await db.commit()
                 else:
                     sub.last_error = f"HTTP {resp.status_code}: {resp.text}"
                     sub.status = "failed"
+                    account.status = "error"
+                    account.error_message = sub.last_error
                     failed += 1
                     await db.commit()
             except Exception as e:
                 sub.last_error = str(e)[:500]
                 sub.status = "failed"
+                account.status = "error"
+                account.error_message = str(e)[:500]
                 await db.commit()
                 failed += 1
                 logger.error("Renewal failed for subscription %s: %s", sub.subscription_id, e)

@@ -20,6 +20,9 @@ async def create_subscription(account: MailAccount, db) -> OutlookSubscription |
         access_token = await get_valid_access_token(account, db)
     except Exception as e:
         logger.error("Failed to get valid access token during subscription creation: %s", e)
+        account.status = "error"
+        account.error_message = f"Subscription token error: {str(e)[:500]}"
+        await db.commit()
         return None
 
     notification_url = f"{settings.BACKEND_URL}/api/v1/webhooks/outlook"
@@ -41,9 +44,18 @@ async def create_subscription(account: MailAccount, db) -> OutlookSubscription |
         )
         if resp.status_code != 201:
             logger.error("Graph subscription creation failed for account %s: HTTP %s - %s", account.id, resp.status_code, resp.text)
+            account.status = "error"
+            account.error_message = f"Webhook creation failed (HTTP {resp.status_code}): {resp.text[:300]}"
+            await db.commit()
             return None
 
         data = resp.json()
+
+    # Delete any existing subscription for this account before adding new sub
+    stmt_old = select(OutlookSubscription).where(OutlookSubscription.mail_account_id == account.id)
+    old_subs = (await db.execute(stmt_old)).scalars().all()
+    for old_sub in old_subs:
+        await db.delete(old_sub)
 
     sub = OutlookSubscription(
         mail_account_id=account.id,
@@ -53,6 +65,8 @@ async def create_subscription(account: MailAccount, db) -> OutlookSubscription |
         status="active",
     )
     db.add(sub)
+    account.status = "active"
+    account.error_message = None
     await db.commit()
     return sub
 

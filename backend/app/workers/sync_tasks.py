@@ -53,12 +53,36 @@ async def orchestrate_accounts(self):
     poll_interval = settings.SYNC_POLL_INTERVAL
 
     async with AsyncSessionLocal() as db:
-        stmt = select(MailAccount.id).where(MailAccount.status != "disconnected")
         if settings.OUTLOOK_WEBHOOKS_ENABLED:
-            stmt = stmt.where(MailAccount.provider != "microsoft")
-        
-        result = await db.execute(stmt)
-        account_ids = result.scalars().all()
+            from datetime import datetime, timezone, timedelta
+            from app.db.models import OutlookSubscription
+            now = datetime.now(timezone.utc)
+            one_hour_ago = now - timedelta(hours=1)
+
+            # Query active, non-expired subscriptions
+            sub_stmt = select(OutlookSubscription.mail_account_id).where(
+                OutlookSubscription.status == "active",
+                OutlookSubscription.expiration_datetime > now,
+            )
+            active_sub_account_ids = set((await db.execute(sub_stmt)).scalars().all())
+
+            all_accounts = (
+                await db.execute(select(MailAccount).where(MailAccount.status != "disconnected"))
+            ).scalars().all()
+
+            account_ids = []
+            for acc in all_accounts:
+                if acc.provider == "microsoft":
+                    has_active_sub = acc.id in active_sub_account_ids
+                    last_sync_utc = acc.last_sync if (acc.last_sync and acc.last_sync.tzinfo) else (acc.last_sync.replace(tzinfo=timezone.utc) if acc.last_sync else None)
+                    synced_recently = last_sync_utc and last_sync_utc > one_hour_ago
+                    if has_active_sub and synced_recently:
+                        continue
+                account_ids.append(acc.id)
+        else:
+            stmt = select(MailAccount.id).where(MailAccount.status != "disconnected")
+            result = await db.execute(stmt)
+            account_ids = result.scalars().all()
 
     total = len(account_ids)
     if not total:
