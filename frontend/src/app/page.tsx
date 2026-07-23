@@ -124,27 +124,8 @@ export default function Dashboard() {
     if (isRefresh) setRefreshing(true);
 
     try {
-      // 1. Fetch Accounts
-      const accountsRes = await fetch("/api/v1/accounts", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (accountsRes.ok) {
-        const accs = await accountsRes.json();
-        setAccounts(accs);
-      }
+      setRulesLoading(true);
 
-      // 2. Fetch User Settings
-      const userRes = await fetch("/api/v1/auth/me", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        setNotifLimitEffective(userData.notification_limit_effective || 0);
-        setNotifLimitFloor(userData.notification_limit_floor || 0);
-        setNotifLimitInput((userData.notification_limit_effective || 0).toString());
-      }
-
-      // 3. Fetch Emails with pagination/filters
       const searchParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString()
@@ -154,9 +135,25 @@ export default function Dashboard() {
       if (providerFilter !== "all") searchParams.append("provider", providerFilter);
       if (mailboxFilter !== "all") searchParams.append("account_id", mailboxFilter);
 
-      const emailsRes = await fetch(`/api/v1/emails?${searchParams.toString()}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const [accountsRes, userRes, emailsRes, rulesRes] = await Promise.all([
+        fetch("/api/v1/accounts", { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch("/api/v1/auth/me", { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch(`/api/v1/emails?${searchParams.toString()}`, { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch("/api/v1/rules", { headers: { "Authorization": `Bearer ${token}` } })
+      ]);
+
+      if (accountsRes.ok) {
+        const accs = await accountsRes.json();
+        setAccounts(accs);
+      }
+
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setNotifLimitEffective(userData.notification_limit_effective || 0);
+        setNotifLimitFloor(userData.notification_limit_floor || 0);
+        setNotifLimitInput((userData.notification_limit_effective || 0).toString());
+      }
+
       if (emailsRes.ok) {
         const data = await emailsRes.json();
         setEmails(data.emails || []);
@@ -164,11 +161,6 @@ export default function Dashboard() {
         setTotalPages(data.total_pages || 1);
       }
 
-      // 4. Fetch Rules
-      setRulesLoading(true);
-      const rulesRes = await fetch("/api/v1/rules", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
       if (rulesRes.ok) {
         setRules(await rulesRes.json());
       }
@@ -176,6 +168,7 @@ export default function Dashboard() {
 
     } catch (err) {
       console.error("Failed to fetch data:", err);
+      setRulesLoading(false);
     } finally {
       setDataLoading(false);
       setRefreshing(false);
