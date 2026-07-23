@@ -1,7 +1,7 @@
 # ─── Web framework ────────────────────────────────────────────
 fastapi==0.115.5
 uvicorn[standard]==0.32.1
-python-multipart==0.0.12
+python-multipart==0.0.31
 email-validator>=2.0.0
 
 # ─── Database ─────────────────────────────────────────────────
@@ -15,9 +15,9 @@ flower==2.0.1
 redis==5.2.0
 
 # ─── Auth & security ──────────────────────────────────────────
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.4.0
 passlib[bcrypt]==1.7.4
-cryptography==43.0.3
+cryptography==48.0.1
 
 # ─── OAuth clients ────────────────────────────────────────────
 httpx==0.28.0
@@ -28,12 +28,12 @@ google-api-python-client==2.154.0
 
 # ─── IMAP fallback ────────────────────────────────────────────
 aioimaplib==2.0.1
-aiosmtplib==3.0.2
+aiosmtplib==5.1.1
 
 # ─── Config ───────────────────────────────────────────────────
 pydantic==2.10.3
 pydantic-settings==2.6.1
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 
 # ─── Rate limiting ────────────────────────────────────────────
 slowapi==0.1.9
@@ -42,10 +42,10 @@ slowapi==0.1.9
 structlog==24.4.0
 
 # ─── Testing ──────────────────────────────────────────────────
-pytest==8.0.0
+pytest==9.0.3
 pytest-asyncio==0.23.5
 
 # ─── Telemetry ────────────────────────────────────────────────
-sentry-sdk==2.7.1
+sentry-sdk==2.8.0
 posthog==3.5.0
 prometheus-client==0.20.0
