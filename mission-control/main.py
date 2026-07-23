@@ -451,9 +451,15 @@ class QueryModel(BaseModel):
 @app.post("/api/v1/db/query")
 async def execute_db_query(payload: QueryModel):
     # VERY dangerous, but requested by user ("Database browsing works", "Database Explorer").
-    # Restricted to SELECT only for safety.
-    if not payload.query.strip().lower().startswith("select"):
+    # Remove multiple statements support entirely to prevent stacked queries
+    # and restrict to basic SELECTs by blocking semicolons completely.
+    # While this may block valid string literals containing semicolons,
+    # it is the only safe way to prevent SQL injection without a full SQL parser.
+    q = payload.query.strip()
+    if not q.lower().startswith("select"):
         return {"error": "Only SELECT queries are allowed."}
+    if ';' in q.strip(';'):
+        return {"error": "Semicolons are not allowed in queries for security reasons."}
         
     conn = None
     try:
