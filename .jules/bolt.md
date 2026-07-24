@@ -10,3 +10,6 @@
 ## 2024-07-23 - Preventing Network Waterfalls with Concurrent Data Fetching
 **Learning:** Performing multiple independent API fetches (like fetching accounts, user settings, emails, and rules in the dashboard) sequentially using consecutive `await fetch(...)` statements causes a network waterfall, significantly delaying time-to-interactive for the user, as each request must wait for the previous one to finish.
 **Action:** Use `Promise.all([fetch1, fetch2, ...])` to run independent fetch requests concurrently, collapsing the total wait time to approximately the duration of the longest single request.
+## 2024-07-24 - [Mass Toggle Preferences Concurrent Execution]
+**Learning:** Sequential await loops on external APIs, specifically within state updaters, create easily avoidable network waterfalls.
+**Action:** Always wrap iterations mapping to async network boundaries with `Promise.all` to ensure concurrent processing.

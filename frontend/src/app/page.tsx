@@ -304,10 +304,11 @@ export default function Dashboard() {
         return a;
       }));
       
-      for (const accountId of activeIds) {
+      // Execute all PATCH requests concurrently to prevent network waterfall
+      await Promise.all(activeIds.map(accountId => {
         const payload: any = {};
         payload[field] = value;
-        await fetch(`/api/v1/accounts/${accountId}`, {
+        return fetch(`/api/v1/accounts/${accountId}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -315,7 +316,7 @@ export default function Dashboard() {
           },
           body: JSON.stringify(payload)
         });
-      }
+      }));
     } catch (err) {
       console.error(err);
       fetchData(true);
